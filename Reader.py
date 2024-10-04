@@ -1,60 +1,86 @@
 import pandas as pd
-from scipy.io import arff
-from sklearn.preprocessing import StandardScaler, LabelEncoder
-from sklearn.impute import SimpleImputer
 import numpy as np
+from scipy.io import arff
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
+from sklearn.impute import SimpleImputer
+from sklearn.compose import ColumnTransformer
+from sklearn.pipeline import Pipeline
+import joblib
+import os
 
-from SVM import SVM
 
+class DataPreprocessor:
+    def __init__(self):
+        self.preprocessor = None
+        self.feature_names = None
 
-class Reader:
-    def __init__(self, file_path):
-        self.file_path = file_path
-        self.data = None
-        self.meta = None
-        try:
-            # Load the ARFF file
-            data, meta = arff.loadarff(self.file_path)
-            self.data = pd.DataFrame(data)
-            self.meta = meta
-        except Exception as e:
-            print(f"Error reading ARFF file: {e}")
+    def fit(self, data: pd.DataFrame):
+        """Fit the preprocessor on the given data."""
+        # Identify numeric and categorical columns
+        numeric_features = data.select_dtypes(include=['int64', 'float64']).columns
+        categorical_features = data.select_dtypes(include=['object']).columns
 
-    def get_raw_df(self):
-        return self.data
+        # Create preprocessing steps for numeric features
+        numeric_transformer = Pipeline(steps=[
+            ('imputer', SimpleImputer(strategy='median')),
+            ('scaler', StandardScaler())
+        ])
 
-    def get_preprocessed_df(self):
-        df = self.data.copy()
-        # Separate features and target
-        X = df.drop(columns=["class"])
-        y = df["class"]
+        # Create preprocessing steps for categorical features
+        categorical_transformer = Pipeline(steps=[
+            ('imputer', SimpleImputer(strategy='constant', fill_value='missing')),
+            ('onehot', OneHotEncoder(handle_unknown='ignore'))
+        ])
 
-        # Handle missing values
-        # For numerical columns: use mean, for categorical: use most frequent
-        num_cols = X.select_dtypes(include=['float64', 'int64']).columns
-        cat_cols = X.select_dtypes(include=['object']).columns
+        # Combine preprocessing steps
+        self.preprocessor = ColumnTransformer(
+            transformers=[
+                ('num', numeric_transformer, numeric_features),
+                ('cat', categorical_transformer, categorical_features)
+            ])
 
-        num_imputer = SimpleImputer(strategy='mean')
-        cat_imputer = SimpleImputer(strategy='most_frequent')
+        # Fit the preprocessor on the data
+        self.preprocessor.fit(data)
+        self.feature_names = self.preprocessor.get_feature_names_out()
 
-        X[num_cols] = num_imputer.fit_transform(X[num_cols])
-        X[cat_cols] = cat_imputer.fit_transform(X[cat_cols])
+    def transform(self, data: pd.DataFrame):
+        """Transform the given data using the fitted preprocessor."""
+        if self.preprocessor is None:
+            raise ValueError("Preprocessor not fitted. Call fit() first.")
 
-        # Encode categorical features
-        encoders = {}
-        for col in cat_cols:
-            le = LabelEncoder()
-            X[col] = le.fit_transform(X[col])
-            encoders[col] = le
+        # If preprocessing a single row, we need to reshape it
+        if data.shape[0] == 1:
+            data = data.to_frame().T if isinstance(data, pd.Series) else data
 
-        scaler = StandardScaler()
-        X[num_cols] = scaler.fit_transform(X[num_cols])
+        # Transform the data
+        transformed_data = self.preprocessor.transform(data)
+        preprocessed_data = pd.DataFrame(transformed_data, columns=self.feature_names)
 
-        return X, y, encoders, scaler
+        # Get tags column
+        tags = preprocessed_data.get("class")
 
-    def get_metadata(self):
-        if self.meta:
-            return self.meta
-        else:
-            print("ARFF file not loaded yet.")
-            return None
+        return preprocessed_data.drop("class", axis=1), tags
+
+    def fit_transform(self, data: pd.DataFrame) -> pd.DataFrame:
+        """Fit the preprocessor and transform the data in one step."""
+        self.fit(data)
+        return self.transform(data)
+
+    def save(self, filepath: str):
+        """Save the preprocessor to a file."""
+        if self.preprocessor is None:
+            raise ValueError("Preprocessor not fitted. Nothing to save.")
+        joblib.dump((self.preprocessor, self.feature_names), filepath)
+
+    @classmethod
+    def load(cls, filepath: str):
+        """Load a preprocessor from a file."""
+        preprocessor = cls()
+        preprocessor.preprocessor, preprocessor.feature_names = joblib.load(filepath)
+        return preprocessor
+
+    @staticmethod
+    def load_arff(filepath: str) -> pd.DataFrame:
+        """Load an ARFF file and return a pandas DataFrame."""
+        data, meta = arff.loadarff(filepath)
+        return pd.DataFrame(data)
