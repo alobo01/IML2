@@ -3,6 +3,7 @@ from sklearn.model_selection import cross_val_score
 from sklearn.metrics import accuracy_score, classification_report
 import pandas as pd
 
+
 class SVM():
     """
     SVM Classifier Class
@@ -41,7 +42,7 @@ class SVM():
     def evaluate(self, test_data: pd.DataFrame, test_labels: pd.Series):
         """
         Evaluate the trained SVM model on the provided test set.
-        
+
         Args:
         - test_data: DataFrame of testing features.
         - test_labels: Series of true labels for the test set.
@@ -50,10 +51,11 @@ class SVM():
         """
         if self.model is None:
             raise ValueError("The model needs to be trained before evaluation.")
-        
+
         predictions = self.predict(test_data)
         test_accuracy = accuracy_score(test_labels, predictions)
-        report = classification_report(test_labels, predictions, target_names=['Class 0', 'Class 1'])
+        # CHANGE THE TARGET NAMES TO MAKE IT GENERIC
+        report = classification_report(test_labels, predictions, target_names=['Class 0', 'Class 1','Class 2'])
 
         print(f"Test Accuracy: {test_accuracy:.4f}")
         print(f"Classification Report:\n{report}")
@@ -69,7 +71,7 @@ class SVM():
         """
         if self.model is None:
             raise ValueError("The model needs to be trained before cross-validation.")
-        
+
         cv_scores = cross_val_score(self.model, self.train_data, self.train_labels, cv=cv)
         print(f"Cross-Validation Accuracy: {cv_scores.mean():.4f} ± {cv_scores.std():.4f}")
         return cv_scores
