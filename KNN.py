@@ -4,22 +4,6 @@ import pandas as pd
 import numpy as np
 
 
-class KNNData(BaseModel):
-    """
-    Data model using pydantic to validate input dataframes.
-    Expects a pandas DataFrame with numerical values.
-    """
-    data: pd.DataFrame
-
-    @validator('data')
-    def check_dataframe_numeric(cls, v):
-        if not isinstance(v, pd.DataFrame):
-            raise ValueError("Input must be a pandas DataFrame")
-        if not all([np.issubdtype(dt, np.number) for dt in v.dtypes]):
-            raise ValueError("All columns in the DataFrame must be numerical")
-        return v
-
-
 class KNNAlgorithm:
     """
     A k-Nearest Neighbors (kNN) Classifier supporting multiple voting techniques.
