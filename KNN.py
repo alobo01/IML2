@@ -1,23 +1,6 @@
-from pydantic import BaseModel, validator
 from typing import List, Union, Any
 import pandas as pd
 import numpy as np
-
-
-class KNNData(BaseModel):
-    """
-    Data model using pydantic to validate input dataframes.
-    Expects a pandas DataFrame with numerical values.
-    """
-    data: pd.DataFrame
-
-    @validator('data')
-    def check_dataframe_numeric(cls, v):
-        if not isinstance(v, pd.DataFrame):
-            raise ValueError("Input must be a pandas DataFrame")
-        if not all([np.issubdtype(dt, np.number) for dt in v.dtypes]):
-            raise ValueError("All columns in the DataFrame must be numerical")
-        return v
 
 
 class KNNAlgorithm:
@@ -51,6 +34,21 @@ class KNNAlgorithm:
         else:
             raise ValueError(f"Unsupported weighting method: {self.weighting_method}")
 
+    def get_distances(self, train_data: pd.DataFrame, test_row: pd.Series) -> list[tuple[int, float]]:
+        """
+        Calculate list of distances between vectors of 2 DataFrames.
+        """
+        weights = self.get_weights(test_row)
+
+        if self.distance_metric == 'euclidean_distance':
+            return [(int(index), self.euclidean_distance(test_row, row, weights)) for index, row in train_data.iterrows()]
+        elif self.voting_policy == 'manhattan_distance':
+            return [(int(index), self.manhattan_distance(test_row, row, weights)) for index, row in train_data.iterrows()]
+        elif self.voting_policy == 'OTHER_distance':
+            return [(int(index), self.OTHER_distance(test_row, row, weights)) for index, row in train_data.iterrows()]
+        else:
+            raise ValueError(f"Unsupported distance function: {self.distance_metric}")
+
     def euclidean_distance(self, vec1: Union[pd.Series, np.ndarray], vec2: Union[pd.Series, np.ndarray], weights) -> float:
         """
         Euclidean distance metric.
@@ -68,21 +66,6 @@ class KNNAlgorithm:
         OTHER distance metric.
         """
         return np.sqrt(np.sum(weights * (vec1 - vec2) ** 2))
-
-    def get_distances(self, train_data: pd.DataFrame, test_row: pd.Series) -> list[tuple[int, float]]:
-        """
-        Calculate list of distances between vectors of 2 DataFrames.
-        """
-        weights = self.get_weights(test_row)
-
-        if self.distance_metric == 'euclidean_distance':
-            return [(int(index), self.euclidean_distance(test_row, row, weights)) for index, row in train_data.iterrows()]
-        elif self.voting_policy == 'manhattan_distance':
-            return [(int(index), self.manhattan_distance(test_row, row, weights)) for index, row in train_data.iterrows()]
-        elif self.voting_policy == 'OTHER_distance':
-            return [(int(index), self.OTHER_distance(test_row, row, weights)) for index, row in train_data.iterrows()]
-        else:
-            raise ValueError(f"Unsupported distance function: {self.distance_metric}")
 
     def get_neighbors(self, train_data: pd.DataFrame, train_labels: pd.Series, test_row: pd.Series) -> tuple[Any, Any]:
         """
@@ -141,13 +124,13 @@ class KNNAlgorithm:
         """
         Fit the kNN model with training data and labels.
         """
-        self.train_data = KNNData(data=train_data).data
+        self.train_data = train_data
         self.train_labels = train_labels
 
     def predict(self, test_data: pd.DataFrame) -> List[Union[int, float]]:
         """
         Predict the class labels for the test set.
         """
-        test_data = KNNData(data=test_data).data
+        test_data = test_data
         predictions = [self.classify(self.train_data, self.train_labels, row) for _, row in test_data.iterrows()]
         return predictions
