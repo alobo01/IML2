@@ -1,3 +1,4 @@
 scipy
 pydantic
 pandas
+scikit-learn
