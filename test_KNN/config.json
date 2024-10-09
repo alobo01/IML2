@@ -1,0 +1,78 @@
+{
+  "defaults": {
+    "numeric": {
+      "imputer": "simple",
+      "imputer_strategy": "median",
+      "scaler": "standard"
+    },
+    "categorical": {
+      "imputer": "simple",
+      "imputer_strategy": "constant",
+      "imputer_fill_value": "missing",
+      "encoder": "onehot"
+    }
+  },
+  "columns": {
+    "AGE": {
+      "type": "numeric"
+    },
+    "SEX": {
+      "type": "categorical"
+    },
+    "STEROID": {
+      "type": "categorical"
+    },
+    "ANTIVIRALS": {
+      "type": "categorical"
+    },
+    "FATIGUE": {
+      "type": "categorical"
+    },
+    "MALAISE": {
+      "type": "categorical"
+    },
+    "ANOREXIA": {
+      "type": "categorical"
+    },
+    "LIVER_BIG": {
+      "type": "categorical"
+    },
+    "LIVER_FIRM": {
+      "type": "categorical"
+    },
+    "SPLEEN_PALPABLE": {
+      "type": "categorical"
+    },
+    "SPIDERS": {
+      "type": "categorical"
+    },
+    "ASCITES": {
+      "type": "categorical"
+    },
+    "VARICES": {
+      "type": "categorical"
+    },
+    "BILIRUBIN": {
+      "type": "numeric"
+    },
+    "ALK_PHOSPHATE": {
+      "type": "numeric"
+    },
+    "SGOT": {
+      "type": "numeric"
+    },
+    "ALBUMIN": {
+      "type": "numeric"
+    },
+    "PROTIME": {
+      "type": "numeric"
+    },
+    "HISTOLOGY": {
+      "type": "categorical"
+    },
+    "Class": {
+      "type": "categorical",
+      "encoder": "ordinal"
+    }
+  }
+}
