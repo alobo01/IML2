@@ -12,6 +12,16 @@ import os
 
 
 class DataPreprocessor:
+    @staticmethod
+    def load_arff(arff_filepath):
+        try:
+            data, meta = arff.loadarff(arff_filepath)
+            return pd.DataFrame(data), meta
+        except FileNotFoundError:
+            raise FileNotFoundError(f"The file {arff_filepath} was not found.")
+        except Exception as e:
+            raise Exception(f"Error loading ARFF file: {str(e)}")
+
     def __init__(self, arff_filepath=None):
         self.preprocessor = None
         self.feature_names = None
@@ -20,7 +30,7 @@ class DataPreprocessor:
 
         if arff_filepath:
             try:
-                self.data, self.meta = arff.loadarff(arff_filepath)
+                self.data, self.meta = self.load_arff(arff_filepath)
                 self.data = pd.DataFrame(self.data)
             except FileNotFoundError:
                 raise FileNotFoundError(f"The file {arff_filepath} was not found.")
@@ -151,7 +161,7 @@ class DataPreprocessor:
             raise ValueError("Preprocessor not fitted. Nothing to save.")
 
         try:
-            joblib.dump((self.preprocessor, self.feature_names), filepath)
+            joblib.dump((self.data, self.preprocessor, self.feature_names), filepath)
         except PermissionError:
             raise PermissionError(f"Permission denied: Unable to save file to {filepath}")
         except Exception as e:
@@ -166,7 +176,7 @@ class DataPreprocessor:
             raise FileNotFoundError(f"The file {filepath} was not found.")
 
         try:
-            preprocessor.preprocessor, preprocessor.feature_names = joblib.load(filepath)
+            preprocessor.data, preprocessor.preprocessor, preprocessor.feature_names = joblib.load(filepath)
         except Exception as e:
             raise Exception(f"Error loading preprocessor: {str(e)}")
 
