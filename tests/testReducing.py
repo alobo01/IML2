@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.datasets import make_moons, make_blobs
+from sklearn.neighbors import KNeighborsClassifier
 from sklearn.model_selection import train_test_split
 from KNN import KNNAlgorithm
 import pandas as pd
@@ -16,7 +17,7 @@ def generate_dataset():
     """
     # Generate two interleaving half circles
     X1, y1 = make_moons(n_samples=300, noise=0.1, random_state=42)
-    #y1[y1 == 1] = 2  # Change label 1 to 2
+    y1[y1 == 0] = 2  # Change label 1 to 2
 
     # Generate a blob for the third class
     X2, y2 = make_blobs(n_samples=200, centers=1, cluster_std=0.6, random_state=42)
@@ -59,24 +60,24 @@ def main():
     train_data, test_data = train_test_split(data, test_size=0.2, random_state=42)
 
     # Initialize the KNN classifier
-    knn = KNNAlgorithm(k=3,distance_function=lambda v1,v2: np.linalg.norm(v2-v1))
-    knn.fit(train_data[['X', 'Y']], train_data['Label'])
+    knn = KNeighborsClassifier(n_neighbors=3)
+    knn.fit(train_data[['X', 'Y']].to_numpy(), train_data['Label'].to_numpy())
 
     # Initialize the ReductionKNN object
-    reduction_knn = ReductionKNN(knn)
+    reduction_knn = ReductionKNN(KNeighborsClassifier(n_neighbors=1))
 
     # Set up the plot
-    fig, axs = plt.subplots(2, 2, figsize=(15, 15))
+    fig, axs = plt.subplots(3, 2, figsize=(15, 15))
     fig.suptitle('Comparison of KNN Reduction Methods', fontsize=16)
 
     # Plot the original dataset
-    plot_dataset(axs[0, 0], train_data, 'Original Dataset')
+
 
     # Apply each reduction method and plot the results
     for i, method in enumerate(['GCNN', 'RENN', 'IB2']):
         reduced_data = reduction_knn.apply_reduction(train_data, method)
-        row, col = (i + 1) // 2, (i + 1) % 2
-        plot_dataset(axs[row, col], reduced_data, f'{method} Reduced Dataset')
+        plot_dataset(axs[i, 0], train_data, 'Original Dataset')
+        plot_dataset(axs[i, 1], reduced_data, f'{method} Reduced Dataset')
 
         # Print the reduction in dataset size
         print(f"{method} reduced the dataset from {len(train_data)} to {len(reduced_data)} points")
