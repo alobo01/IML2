@@ -1,12 +1,7 @@
-<<<<<<< HEAD
-scipy~=1.13.1
-pydantic~=2.8.2
-=======
 scipy
-pydantic~=2.4.2
->>>>>>> 42e73307024175a359f2b1c4649431e4fe9cb0f1
-scikit-learn~=1.5.2
-pandas~=2.2.2
-numpy~=2.0.0
-joblib~=1.4.2
-matplotlib~=3.9.2
+pydantic
+scikit-learn
+pandas
+numpy
+joblib
+matplotlib

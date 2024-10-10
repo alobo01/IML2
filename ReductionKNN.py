@@ -1,5 +1,8 @@
 import numpy as np
 import random
+
+import pandas as pd
+
 from KNN import KNNAlgorithm
 from pandas import DataFrame
 
@@ -11,20 +14,42 @@ class ReductionKNN:
     Class for applying different reduction techniques to a dataset before 
     performing K-Nearest Neighbor (KNN) classification.
 
+    Generalized Condensed Nearest Neighbor (GCNN) Implementation:
+    The GCNN algorithm reduces the dataset using a generalized criterion to absorb
+    samples into the prototype set, based on a threshold defined by the nearest homogeneous
+    and heterogeneous samples.
+
+    Citation:
+    https://citeseerx.ist.psu.edu/document?repid=rep1&type=pdf&doi=d5cf73f3d4d165f3aa51f1492caefc1d0a52a743
+
+    Repeated Edited Nearest Neighbor (RENN) Implementation:
+    The RENN algorithm applies the ENN algorithm iteratively until all instances remaining
+    have a majority of their neighbors with the same class, smoothing decision boundaries.
+
+    Citation:
+    https://link.springer.com/content/pdf/10.1023/A:1007626913721.pdf: Wilson (1972) developed the Edited Nearest Neighbor (ENN) algorithm in which S starts out the same as T, and then each instance in S is removed if it does not agree with the majority of its k nearest neighbors (with k = 3, typically).
+
+    Instance-Based Learning 2 (IB2) Implementation:
+    The IB2 algorithm retains border points while eliminating internal points that are surrounded by members of the same class, based on an incremental absorption criterion.
+
+    Citation:
+    https://link.springer.com/content/pdf/10.1023/A:1007626913721.pdf
+
     Attributes:
         originalKNN: The original KNN classifier.
         reducedKNN: The reduced KNN classifier after applying a reduction method.
     """
 
-    def __init__(self, bestKNN: KNNAlgorithm):
+    def __init__(self, original: KNNAlgorithm, reduced: KNNAlgorithm):
         """
         Initializes the ReductionKNN class with the original KNN classifier.
 
         Args:
-            bestKNN (KNNAlgorithm): The KNN classifier object.
+            original (KNNAlgorithm): The KNN classifier object.
+            reduced (KNNAlgorithm): The KNN classifier object to reduct.
         """
-        self.originalKNN = bestKNN
-        self.reducedKNN = None
+        self.originalKNN = original
+        self.reducedKNN = reduced
 
     def apply_reduction(self, data: DataFrame, reductionMethod: str):
         """
@@ -49,8 +74,8 @@ class ReductionKNN:
         else:
             raise ValueError(f"Reduction method {reductionMethod} not recognized.")
 
-        reduced_data = data.iloc[reduced_indices]
-        self.reducedKNN = self.originalKNN
+        reduced_data = data.loc[reduced_indices]
+
         self.reducedKNN.fit(reduced_data.iloc[:, :-1], reduced_data.iloc[:, -1])
 
         return reduced_data
@@ -58,7 +83,7 @@ class ReductionKNN:
     def generalized_condensed_nearest_neighbor(self, features: DataFrame, labels: DataFrame, rho=0.5):
         """
         The Generalized Condensed Nearest Neighbor (GCNN) algorithm reduces the dataset by absorbing samples
-        based on a generalized absorption criterion.
+        based on a generalized absorption criterion. CNN is when rho=0
 
         Citation:
         Nikolaidis, K., Rodriguez, J. J., & Goulermas, J. Y. (2011). Generalized Condensed Nearest 
@@ -68,56 +93,48 @@ class ReductionKNN:
         Args:
             features (DataFrame): The feature set of the dataset.
             labels (DataFrame): The labels of the dataset.
-            rho (float): The absorption threshold, ρ ∈ [0, 1].
+            rho (float): The absorption threshold, ρ ∈ [0, 1).
 
         Returns:
             list: Indices of the points in the reduced dataset.
         """
-        features_array = np.array(features)
-        labels_array = np.array(labels)
-
         # Initialize prototypes for each class
         prototypes = []
         prototype_labels = []
         prototype_indices = []
 
-        unique_labels = np.unique(labels_array)
+        unique_labels = labels.unique()
         for lbl in unique_labels:
-            class_indices = np.where(labels_array == lbl)[0]
-            rand_index = random.choice(class_indices)
-            prototypes.append(features_array[rand_index])
-            prototype_labels.append(labels_array[rand_index])
+            class_indices = labels[labels == lbl].index
+            rand_index = np.random.choice(class_indices)
+            prototypes.append(features.loc[rand_index])
+            prototype_labels.append(lbl)
             prototype_indices.append(rand_index)
 
-        prototypes = np.array(prototypes)
-        prototype_labels = np.array(prototype_labels)
+        prototypes = pd.DataFrame(prototypes)
+        prototype_labels = pd.Series(prototype_labels)
 
         # Compute δn: minimum distance between points of different classes
-        dist_matrix = distance_matrix(features_array, features_array)
-        delta_n = np.min([dist_matrix[i, j] for i in range(len(features_array)) for j in range(len(features_array)) if
-                          labels_array[i] != labels_array[j]])
+        dist_matrix = pd.DataFrame(np.linalg.norm(features.values[:, np.newaxis] - features.values, axis=2))
+        delta_n = dist_matrix[labels.values[:, np.newaxis] != labels.values].min().min()
 
         # Iteratively absorb points
-        absorbed = np.full(len(features_array), False)
+        absorbed = pd.Series(False, index=features.index)
         absorbed[prototype_indices] = True
 
-        while not np.all(absorbed):
-            for i in range(len(features_array)):
+        while not absorbed.all():
+            for i in features.index:
                 if not absorbed[i]:
-                    p_idx = np.argmin(
-                        [np.linalg.norm(features_array[i] - proto) for proto, lbl in zip(prototypes, prototype_labels)
-                         if lbl == labels_array[i]])
-                    q_idx = np.argmin(
-                        [np.linalg.norm(features_array[i] - proto) for proto, lbl in zip(prototypes, prototype_labels)
-                         if lbl != labels_array[i]])
+                    p_idx = (prototype_labels == labels[i]).idxmin()  # Get index of closest prototype in same class
+                    q_idx = (prototype_labels != labels[i]).idxmin()  # Get index of closest prototype in different class
 
-                    p = prototypes[p_idx]
-                    q = prototypes[q_idx]
+                    p = prototypes.iloc[p_idx]
+                    q = prototypes.iloc[q_idx]
 
                     # Absorption criteria
-                    if np.linalg.norm(features_array[i] - q) - np.linalg.norm(features_array[i] - p) > rho * delta_n:
-                        prototypes = np.vstack([prototypes, features_array[i]])
-                        prototype_labels = np.append(prototype_labels, labels_array[i])
+                    if np.linalg.norm(features.loc[i] - q) - np.linalg.norm(features.loc[i] - p) > rho * delta_n:
+                        prototypes = pd.concat([prototypes,features.loc[i]], ignore_index=True)
+                        prototype_labels = pd.concat([prototype_labels,pd.Series([labels[i]])], ignore_index=True)
                         prototype_indices.append(i)
                     absorbed[i] = True
 
@@ -127,6 +144,8 @@ class ReductionKNN:
         """
         Repeated Edited Nearest Neighbor (RENN) applies the ENN algorithm iteratively until all instances 
         remaining have a majority of their k nearest neighbors with the same class.
+        ENN, typically with k=3 we will remove a point x_0 if all neighbours x_i in NN(x_0,k) don't have consensus
+        on the elected class
 
         Citation:
         Wilson, D. L. (1972). Asymptotic Properties of Nearest Neighbor Rules Using Edited Data. 
@@ -142,28 +161,23 @@ class ReductionKNN:
         Returns:
             list: Indices of the points in the reduced dataset.
         """
-        features_array = np.array(features)
-        labels_array = np.array(labels)
-
-        absorbed = np.full(len(features_array), True)
+        absorbed = pd.Series(True, index=features.index)
         changed = True
 
         while changed:
             changed = False
-            knn = self.originalKNN
-            knn.fit(features_array[absorbed], labels_array[absorbed])
+            knn = self.reducedKNN
+            knn.fit(features[absorbed], labels[absorbed])
 
-            for i in range(len(features_array)):
-                if absorbed[i]:
-                    neighbors = knn.kneighbors([features_array[i]], n_neighbors=k, return_distance=False)
-                    neighbor_labels = labels_array[absorbed][neighbors[0]]
+            for i in features.index[absorbed]:
+                neighbors, neighbor_labels= knn.get_neighbors(features.loc[i])
 
-                    # If majority of k neighbors disagree, remove the point
-                    if np.sum(neighbor_labels == labels_array[i]) <= k // 2:
-                        absorbed[i] = False
-                        changed = True
+                # If majority of k neighbors disagree, remove the point
+                if neighbor_labels.value_counts().get(labels[i], 0) <= k // 2:
+                    absorbed[i] = False
+                    changed = True
 
-        return np.where(absorbed)[0].tolist()
+        return absorbed[absorbed].index.tolist()
 
     def ib2(self, features: DataFrame, labels: DataFrame):
         """
@@ -183,11 +197,8 @@ class ReductionKNN:
         Returns:
             list: Indices of the points in the reduced dataset.
         """
-        features_array = np.array(features)
-        labels_array = np.array(labels)
-
         # Initialize a list of indices for the dataset and shuffle them
-        indices = list(range(len(features_array)))
+        indices = features.index.tolist()
         random.shuffle(indices)
 
         # Initialize the condensed set with the first random point
@@ -196,14 +207,14 @@ class ReductionKNN:
 
         # Loop through the shuffled dataset
         for i in indices:
-            knn = self.originalKNN
-            knn.fit(features_array[condensed_indices], labels_array[condensed_indices])
+            knn = self.reducedKNN
+            knn.fit(features.loc[condensed_indices], labels.loc[condensed_indices])
 
             # Predict the label of the current point using the reduced set
-            prediction = knn.predict([features_array[i]])
+            prediction = knn.predict(features.loc[[i]])
 
             # If the prediction is incorrect, add the point to the condensed set
-            if prediction != labels_array[i]:
+            if prediction != labels[i]:
                 condensed_indices.append(i)
 
         return condensed_indices

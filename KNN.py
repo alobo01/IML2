@@ -2,7 +2,6 @@ from typing import List, Union, Any
 import pandas as pd
 import numpy as np
 
-
 class KNNAlgorithm:
     """
     A k-Nearest Neighbors (kNN) Classifier supporting multiple voting techniques.
@@ -25,15 +24,16 @@ class KNNAlgorithm:
         self.voting_policy = voting_policy
         self.train_features = None
         self.train_labels = None
+        #self.distance_matrix = None
 
     def fit(self, train_features: pd.DataFrame, train_labels: pd.Series):
         """
         Fit the kNN model with training data and labels.
         """
         weights = self.get_weights(train_features)
-
         self.train_features = train_features.multiply(weights, axis=1)
         self.train_labels = train_labels
+        #self.distance_matrix = self.compute_distance_matrix(self.train_features)
 
     def get_weights(self, train_features: pd.DataFrame) -> np.ndarray:
         if self.weighting_method == 'equal_weight':
@@ -45,32 +45,50 @@ class KNNAlgorithm:
         else:
             raise ValueError(f"Unsupported weighting method: {self.weighting_method}")
 
-    def get_distances(self, train_features: pd.DataFrame, test_row: pd.Series) -> list[tuple[int, float]]:
+    def compute_distance_matrix(self, train_features: pd.DataFrame) -> np.ndarray:
         """
-        Calculate list of distances between vectors of 2 DataFrames.
+        Compute the distance matrix between all pairs of training examples.
+        """
+        n_samples = train_features.shape[0]
+        distance_matrix = np.zeros((n_samples, n_samples))
+
+        for i in range(n_samples):
+            for j in range(i+1, n_samples):
+                distance = self.get_distance(train_features.iloc[i], train_features.iloc[j])
+                distance_matrix[i, j] = distance
+                distance_matrix[j, i] = distance  # Symmetric matrix
+
+        return distance_matrix
+
+    def get_distance(self, vec1: pd.Series, vec2: pd.Series) -> float:
+        """
+        Compute the distance between two vectors based on the selected metric.
         """
         if self.distance_metric == 'euclidean_distance':
-            return [(int(index), self.euclidean_distance(test_row, row)) for index, row in train_features.iterrows()]
+            return self.euclidean_distance(vec1, vec2)
         elif self.distance_metric == 'manhattan_distance':
-            return [(int(index), self.manhattan_distance(test_row, row)) for index, row in train_features.iterrows()]
+            return self.manhattan_distance(vec1, vec2)
         elif self.distance_metric == 'clark_distance':
-            return [(int(index), self.clark_distance(test_row, row)) for index, row in train_features.iterrows()]
+            return self.clark_distance(vec1, vec2)
         else:
             raise ValueError(f"Unsupported distance function: {self.distance_metric}")
 
-    def euclidean_distance(self, vec1: pd.Series, vec2: pd.Series) -> float:
+    @staticmethod
+    def euclidean_distance(vec1: pd.Series, vec2: pd.Series) -> float:
         """
         Euclidean distance metric.
         """
         return np.sqrt(np.sum((vec1 - vec2) ** 2))
 
-    def manhattan_distance(self, vec1: pd.Series, vec2: pd.Series) -> float:
+    @staticmethod
+    def manhattan_distance(vec1: pd.Series, vec2: pd.Series) -> float:
         """
         Manhattan distance metric.
         """
         return np.sum(np.abs(vec1 - vec2))
 
-    def clark_distance(self, vec1: pd.Series, vec2: pd.Series) -> float:
+    @staticmethod
+    def clark_distance(vec1: pd.Series, vec2: pd.Series) -> float:
         """
         Clark distance metric.
         """
@@ -78,29 +96,28 @@ class KNNAlgorithm:
         denominator = vec1 + vec2
         squared_ratio = (numerator / denominator) ** 2
 
-        # Handle divisions by zero (if vec1 + vec2 == 0, the result should be ignored in sum)
         squared_ratio = squared_ratio.replace([np.inf, -np.inf], np.nan).dropna()
 
         return np.sqrt(squared_ratio.sum())
 
-    def get_neighbors(self, train_features: pd.DataFrame, train_labels: pd.Series, test_row: pd.Series) -> tuple[Any, Any]:
+    def get_neighbors(self, test_row: pd.Series) -> tuple[Any, Any]:
         """
         Identify the k nearest neighbors for a given test row.
         """
-        distances = self.get_distances(train_features, test_row)
-        sorted_distances = sorted(distances, key=lambda x: x[1])  # Sort by distance
-        neighbors_idx = [index for index, _ in sorted_distances[:self.k]]  # Get the top k indices
+        distances = [(index, self.get_distance(test_row, self.train_features.iloc[index])) for index in range(len(self.train_features))]
+        sorted_distances = sorted(distances, key=lambda x: x[1])
+        neighbors_idx = [index for index, _ in sorted_distances[:self.k]]
 
-        neighbors_features = train_features.iloc[neighbors_idx]
-        neighbors_labels = train_labels.iloc[neighbors_idx]
+        neighbors_features = self.train_features.iloc[neighbors_idx]
+        neighbors_labels = self.train_labels.iloc[neighbors_idx]
 
-        return neighbors_features, neighbors_labels # @todo TYPING?? Then, change it in voting policies as well
+        return neighbors_features, neighbors_labels
 
-    def classify(self, train_features: pd.DataFrame, train_labels: pd.Series, test_row: pd.Series) -> Union[int, float]:
+    def classify(self, test_row: pd.Series) -> Union[int, float]:
         """
         Classify a single example using k-nearest neighbors.
         """
-        neighbors_features, neighbors_labels = self.get_neighbors(train_features, train_labels, test_row)
+        neighbors_features, neighbors_labels = self.get_neighbors(test_row)
 
         if self.voting_policy == 'majority_class':
             return self.majority_class_vote(neighbors_labels)
@@ -115,15 +132,14 @@ class KNNAlgorithm:
         """
         Majority class voting: Return the most common class among the neighbors.
         """
-        return neighbors_labels.mode()[0]  # Get the most frequent label
+        return neighbors_labels.mode()[0]
 
     def inverse_distance_weighted(self, neighbors_features, neighbors_labels, test_row: pd.Series) -> float:
         """
         Inverse distance weighting: Weight the class labels by the inverse of their distances.
         """
-        distances = self.get_distances(neighbors_features, test_row) # @todo This is already calculated. Maybe store and bring here
-        # Avoid division by zero
-        weights = [1 / (d + 1e-5) for _, d in distances]  # Add a small constant to avoid division by zero
+        distances = [self.get_distance(test_row, row) for _, row in neighbors_features.iterrows()]
+        weights = [1 / (d + 1e-5) for d in distances]
         class_vote = {}
 
         for i, weight in enumerate(weights):
@@ -132,17 +148,15 @@ class KNNAlgorithm:
                 class_vote[label] = 0
             class_vote[label] += weight
 
-        # Find the label with the highest weighted vote
         max_vote_label = max(class_vote, key=class_vote.get)
-
         return max_vote_label
 
     def shepard_vote(self, neighbors_features, neighbors_labels, test_row: pd.Series) -> float:
         """
         Shepard's method: Use a power-based weighting.
         """
-        distances = self.get_distances(neighbors_features, test_row)
-        weights = [np.exp(-d) for _, d in distances]  # Shepard's weighting (power of 2)
+        distances = [self.get_distance(test_row, row) for _, row in neighbors_features.iterrows()]
+        weights = [np.exp(-d) for d in distances]
         class_vote = {}
 
         for i, weight in enumerate(weights):
@@ -151,15 +165,21 @@ class KNNAlgorithm:
                 class_vote[label] = 0
             class_vote[label] += weight
 
-        # Find the label with the highest weighted vote
         max_vote_label = max(class_vote, key=class_vote.get)
-
         return max_vote_label
 
     def predict(self, test_features: pd.DataFrame) -> List[Union[int, float]]:
         """
         Predict the class labels for the test set.
         """
-        test_features = test_features
-        predictions = [self.classify(self.train_features, self.train_labels, row) for _, row in test_features.iterrows()]
+        predictions = [self.classify(row) for _, row in test_features.iterrows()]
         return predictions
+
+    def score(self, test_features: pd.DataFrame, test_labels: pd.Series) -> float:
+        """
+        Calculate the accuracy of the kNN classifier on the test data.
+        """
+        predictions = self.predict(test_features)
+        correct_predictions = sum(pred == true for pred, true in zip(predictions, test_labels))
+        accuracy = correct_predictions / len(test_labels)
+        return accuracy
