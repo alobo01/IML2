@@ -1,12 +1,14 @@
 from sklearn.svm import SVC
 from sklearn.model_selection import cross_val_score
 from sklearn.metrics import accuracy_score, classification_report
+from sklearn.multiclass import OneVsRestClassifier
 import pandas as pd
 
 
 class SVM():
     """
-    SVM Classifier Class
+    SVM Classifier Class with One-vs-Rest for multiclass problems.
+
     Attributes:
         - train_data: DataFrame of training features.
         - train_labels: Series of training labels.
@@ -14,18 +16,22 @@ class SVM():
         - C: Regularization parameter for the SVM.
         - gamma: Kernel coefficient for ‘rbf’, ‘poly’ and ‘sigmoid’.
     """
-    def __init__(self, train_data: pd.DataFrame, train_labels: pd.Series, kernel: str = 'rbf', C: float = 1.0, gamma: str = 'scale'):
+
+    def __init__(self, train_data: pd.DataFrame, train_labels: pd.Series, kernel: str = 'rbf', C: float = 1.0,
+                 gamma: str = 'scale'):
         self.train_data = train_data
         self.train_labels = train_labels
         self.kernel = kernel
         self.C = C
         self.gamma = gamma
+        self.model = None
 
     def train(self):
         """
-        Train the SVM model using the provided parameters.
+        Train the SVM model using the One-vs-Rest strategy for multiclass classification.
         """
-        self.model = SVC(kernel=self.kernel, C=self.C, gamma=self.gamma)
+        base_svc = SVC(kernel=self.kernel, C=self.C, gamma=self.gamma)
+        self.model = OneVsRestClassifier(base_svc)
         self.model.fit(self.train_data, self.train_labels)
         print(f"Model trained with kernel='{self.kernel}', C={self.C}, gamma='{self.gamma}'")
 
@@ -54,8 +60,10 @@ class SVM():
 
         predictions = self.predict(test_data)
         test_accuracy = accuracy_score(test_labels, predictions)
-        # CHANGE THE TARGET NAMES TO MAKE IT GENERIC
-        report = classification_report(test_labels, predictions, target_names=['Class 0', 'Class 1','Class 2'])
+        # Automatically generate class labels
+        unique_labels = sorted(self.train_labels.unique())
+        class_names = [f'Class {i}' for i in unique_labels]
+        report = classification_report(test_labels, predictions, target_names=class_names)
 
         print(f"Test Accuracy: {test_accuracy:.4f}")
         print(f"Classification Report:\n{report}")
@@ -64,7 +72,7 @@ class SVM():
 
     def cross_validate(self, cv: int = 5):
         """
-        Perform cross-validation on the training data.
+        Perform cross-validation on the training data using One-vs-Rest strategy.
         Args:
         - cv: Number of folds for cross-validation.
         Returns cross-validation accuracy.
