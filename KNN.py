@@ -1,4 +1,6 @@
 from typing import List, Union, Any
+from sklearn.feature_selection import mutual_info_classif
+from sklearn_relief import ReliefF
 import pandas as pd
 import numpy as np
 
@@ -16,7 +18,7 @@ class KNNAlgorithm:
         Initialize the kNNAlgorithm with:
         - k: Number of neighbors to consider.
         - distance_metric: A function to calculate the distance between samples ('euclidean_distance', 'manhattan_distance', 'clark_distance').
-        - weighting_method: Weighting method to apply to the distance ('equal_weight', 'OTHER1_weight', 'OTHER2_weight').
+        - weighting_method: Weighting method to apply to the distance ('equal_weight', 'information_gain_weight', 'reliefF_weight').
         - voting_policy: Voting technique to determine the class ('majority_class', 'inverse_distance_weighted', 'shepard').
         """
         self.k = k
@@ -30,18 +32,29 @@ class KNNAlgorithm:
         """
         Fit the kNN model with training data and labels.
         """
+        self.train_labels = train_labels
+
         weights = self.get_weights(train_features)
 
         self.train_features = train_features.multiply(weights, axis=1)
-        self.train_labels = train_labels
 
     def get_weights(self, train_features: pd.DataFrame) -> np.ndarray:
         if self.weighting_method == 'equal_weight':
             return np.ones(train_features.shape[1])
-        if self.weighting_method == 'OTHER1_weight':
-            return np.ones(train_features.shape[1])
-        if self.weighting_method == 'OTHER2_weight':
-            return np.ones(train_features.shape[1])
+
+        # Information Gain
+        if self.weighting_method == 'information_gain_weight':
+            # Compute information gain for each feature
+            info_gain = mutual_info_classif(train_features, self.train_labels)
+            return info_gain
+
+        # ReliefF
+        if self.weighting_method == 'reliefF_weight':
+            # Initialize ReliefF with the number of neighbors
+            relief = ReliefF(k=self.k)
+            relief.fit(train_features.values, self.train_labels)
+            return relief.w_
+
         else:
             raise ValueError(f"Unsupported weighting method: {self.weighting_method}")
 
