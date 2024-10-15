@@ -1,4 +1,6 @@
 from typing import List, Union, Any
+from sklearn.feature_selection import mutual_info_classif
+from sklearn_relief import ReliefF
 import pandas as pd
 import numpy as np
 
@@ -15,7 +17,7 @@ class KNNAlgorithm:
         Initialize the kNNAlgorithm with:
         - k: Number of neighbors to consider.
         - distance_metric: A function to calculate the distance between samples ('euclidean_distance', 'manhattan_distance', 'clark_distance').
-        - weighting_method: Weighting method to apply to the distance ('equal_weight', 'OTHER1_weight', 'OTHER2_weight').
+        - weighting_method: Weighting method to apply to the distance ('equal_weight', 'information_gain_weight', 'reliefF_weight').
         - voting_policy: Voting technique to determine the class ('majority_class', 'inverse_distance_weighted', 'shepard').
         """
         self.k = k
@@ -30,35 +32,30 @@ class KNNAlgorithm:
         """
         Fit the kNN model with training data and labels.
         """
+        self.train_labels = train_labels
+
         weights = self.get_weights(train_features)
         self.train_features = train_features.multiply(weights, axis=1)
-        self.train_labels = train_labels
-        #self.distance_matrix = self.compute_distance_matrix(self.train_features)
 
     def get_weights(self, train_features: pd.DataFrame) -> np.ndarray:
         if self.weighting_method == 'equal_weight':
             return np.ones(train_features.shape[1])
-        if self.weighting_method == 'OTHER1_weight':
-            return np.ones(train_features.shape[1])
-        if self.weighting_method == 'OTHER2_weight':
-            return np.ones(train_features.shape[1])
+
+        # Information Gain
+        if self.weighting_method == 'information_gain_weight':
+            # Compute information gain for each feature
+            info_gain = mutual_info_classif(train_features, self.train_labels)
+            return info_gain
+
+        # ReliefF
+        if self.weighting_method == 'reliefF_weight':
+            # Initialize ReliefF with the number of neighbors
+            relief = ReliefF(k=self.k)
+            relief.fit(train_features.values, self.train_labels)
+            return relief.w_
+
         else:
             raise ValueError(f"Unsupported weighting method: {self.weighting_method}")
-
-    def compute_distance_matrix(self, train_features: pd.DataFrame) -> np.ndarray:
-        """
-        Compute the distance matrix between all pairs of training examples.
-        """
-        n_samples = train_features.shape[0]
-        distance_matrix = np.zeros((n_samples, n_samples))
-
-        for i in range(n_samples):
-            for j in range(i+1, n_samples):
-                distance = self.get_distance(train_features.iloc[i], train_features.iloc[j])
-                distance_matrix[i, j] = distance
-                distance_matrix[j, i] = distance  # Symmetric matrix
-
-        return distance_matrix
 
     def get_distance(self, vec1: pd.Series, vec2: pd.Series) -> float:
         """

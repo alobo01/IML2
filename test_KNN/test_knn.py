@@ -5,7 +5,13 @@ from sklearn.metrics import accuracy_score
 from Reader import DataPreprocessor
 from KNN import KNNAlgorithm
 
-# 1. Load preprocessed training data from .joblib
+
+# # 0. Load from .arff and preprocess the training data, then save it to .joblib
+# train_preprocessor = DataPreprocessor('hepatitis.fold.000000.train.arff')
+# train_preprocessor.fit(config_path='config.json')
+# train_preprocessor.save("hepatitis_preprocessor.joblib")
+
+# # 1. Load data from .joblib
 loaded_preprocessor = DataPreprocessor().load("hepatitis_preprocessor.joblib")
 train_data_preprocessed = loaded_preprocessor.transform()
 
@@ -20,9 +26,10 @@ test_data_preprocessed = loaded_preprocessor.transform(DataPreprocessor.load_arf
 test_features = test_data_preprocessed.drop('Class', axis=1)
 test_labels = test_data_preprocessed['Class']
 
-# 3. Set up distance metrics and voting policies to test
+# 3. Set up distance metrics, voting policies and weighting methods to test
 distance_metrics = ['euclidean_distance', 'manhattan_distance', 'clark_distance']
 voting_policies = ['majority_class', 'inverse_distance_weighted', 'shepard']
+weighting_methods = ['equal_weight', 'information_gain_weight', 'reliefF_weight']
 
 results = []
 start_time = time.time()
@@ -32,15 +39,16 @@ start_time = time.time()
 
 # Function to evaluate the KNN model
 def evaluate_knn(params):
-    k, dist_metric, vote_policy, train_features, train_labels, test_features, test_labels = params
+    k, dist_metric, vote_policy, weighting_method, train_features, train_labels, test_features, test_labels = params
     print(
         "Executing configuration:\n"
         f" - k: {k}\n"
         f" - Distance Metric: {dist_metric}\n"
         f" - Voting Policy: {vote_policy}\n"
+        f" - Weighting Method: {weighting_method}\n"
     )
     # Create the KNNAlgorithm object with the corresponding configuration
-    knn = KNNAlgorithm(k=k, distance_metric=dist_metric, voting_policy=vote_policy)
+    knn = KNNAlgorithm(k=k, distance_metric=dist_metric, voting_policy=vote_policy, weighting_method=weighting_method)
     knn.fit(train_features, train_labels)
 
     # Make predictions on the test data
@@ -53,14 +61,16 @@ def evaluate_knn(params):
         'k': k,
         'distance_metric': dist_metric,
         'voting_policy': vote_policy,
+        'weighting_method': weighting_method,
         'accuracy': accuracy
     }
 
 # 4. Prepare parameter sets for the pool
-params_list = [(k, dist_metric, vote_policy, train_features, train_labels, test_features, test_labels)
+params_list = [(k, dist_metric, vote_policy, weighting_method, train_features, train_labels, test_features, test_labels)
                for k in [1, 3, 5, 7]
                for dist_metric in distance_metrics
-               for vote_policy in voting_policies]
+               for vote_policy in voting_policies
+               for weighting_method in weighting_methods]
 
 if __name__ == '__main__':
 
@@ -88,11 +98,14 @@ if __name__ == '__main__':
     print(f"k: {best_result['k']}")
     print(f"Distance Metric: {best_result['distance_metric']}")
     print(f"Voting Policy: {best_result['voting_policy']}")
+    print(f"Weighting Method: {best_result['weighting_method']}")
     print(f"Accuracy: {best_result['accuracy']:.4f}\n")
 
+    print(results_df)
+    
     # 8. Display pivot tables for each value of k
-    for k in [1, 3, 5, 7]:
-        print(f"Accuracy Table for k = {k}")
-        pivot_table = results_df[results_df['k'] == k].pivot(index='distance_metric', columns='voting_policy', values='accuracy')
-        print(pivot_table)
-        print("\n")
+    # for k in [1, 3, 5, 7]:
+    #     print(f"Accuracy Table for k = {k}")
+    #     pivot_table = results_df[results_df['k'] == k].pivot(index='distance_metric', columns='voting_policy', values='accuracy')
+    #     print(pivot_table)
+    #     print("\n")
