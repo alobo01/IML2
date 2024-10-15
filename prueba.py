@@ -33,13 +33,13 @@ predictions = svm_classifier.predict(X_test)
 
 print(predictions)
 
-# Now plot the 3 groups of points and the 3 hyperplanes
+# Now plot the K groups of points and the K hyperplanes
 
 # Create a scatter plot of the training data, coloring by label
 plt.scatter(X_train.iloc[:, 0], X_train.iloc[:, 1], c=y_train, cmap='coolwarm', s=30, edgecolors='k', label='Train')
 plt.scatter(X_test.iloc[:, 0], X_test.iloc[:, 1], c=y_test, cmap='coolwarm', marker='x', s=30, label='Test')
 
-# Plot the 3 separating hyperplanes, one for each class (since it's OvR, we have 3 hyperplanes)
+# Plot the K separating hyperplanes, one for each class (since it's OvR, we have K hyperplanes)
 for i, classifier in enumerate(svm_classifier.model.estimators_):
     w = classifier.coef_[0]  # Get the coefficients for the i-th hyperplane
     a = -w[0] / w[1]
