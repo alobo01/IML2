@@ -1,24 +1,6 @@
-from pydantic import BaseModel, validator
-from typing import Callable, List, Union
+from typing import List, Union, Any
 import pandas as pd
 import numpy as np
-
-
-class KNNData(BaseModel):
-    """
-    Data model using pydantic to validate input dataframes.
-    Expects a pandas DataFrame with numerical values.
-    """
-    data: pd.DataFrame
-
-    @validator('data')
-    def check_dataframe_numeric(cls, v):
-        if not isinstance(v, pd.DataFrame):
-            raise ValueError("Input must be a pandas DataFrame")
-        if not all([np.issubdtype(dt, np.number) for dt in v.dtypes]):
-            raise ValueError("All columns in the DataFrame must be numerical")
-        return v
-
 
 class KNNAlgorithm:
     """
@@ -26,84 +8,178 @@ class KNNAlgorithm:
     """
     def __init__(self,
                  k: int = 3,
-                 distance_function: Callable[[Union[pd.Series, np.ndarray], Union[pd.Series, np.ndarray]], float] = None,
+                 distance_metric: str = 'euclidean_distance',
+                 weighting_method: str = 'equal_weight',
                  voting_policy: str = 'majority_class'):
         """
         Initialize the kNNAlgorithm with:
         - k: Number of neighbors to consider.
-        - distance_function: A function to calculate the distance between two vectors.
-        - voting_policy: Voting technique to determine the class ('majority_class', 'inverse_distance_weighting', 'shepard').
+        - distance_metric: A function to calculate the distance between samples ('euclidean_distance', 'manhattan_distance', 'clark_distance').
+        - weighting_method: Weighting method to apply to the distance ('equal_weight', 'OTHER1_weight', 'OTHER2_weight').
+        - voting_policy: Voting technique to determine the class ('majority_class', 'inverse_distance_weighted', 'shepard').
         """
         self.k = k
-        self.distance_function = distance_function if distance_function else self.euclidean_distance
+        self.distance_metric = distance_metric
+        self.weighting_method = weighting_method
         self.voting_policy = voting_policy
+        self.train_features = None
+        self.train_labels = None
+        #self.distance_matrix = None
 
-    def euclidean_distance(self, vec1: Union[pd.Series, np.ndarray], vec2: Union[pd.Series, np.ndarray]) -> float:
-        """
-        Default Euclidean distance function.
-        """
-        return np.sqrt(np.sum((vec1 - vec2) ** 2))
-
-    def get_neighbors(self, train_data: pd.DataFrame, test_row: pd.Series) -> List[int]:
-        """
-        Identify the k nearest neighbors for a given test row.
-        """
-        distances = [(index, self.distance_function(test_row, row)) for index, row in train_data.iterrows()]
-        sorted_distances = sorted(distances, key=lambda x: x[1])  # Sort by distance
-        neighbors = [index for index, _ in sorted_distances[:self.k]]  # Get the top k indices
-        return neighbors
-
-    def classify(self, train_data: pd.DataFrame, train_labels: pd.Series, test_row: pd.Series) -> Union[int, float]:
-        """
-        Classify a single example using k-nearest neighbors.
-        """
-        neighbors = self.get_neighbors(train_data, test_row)
-        if self.voting_policy == 'majority_class':
-            return self.majority_class_vote(train_labels, neighbors)
-        elif self.voting_policy == 'inverse_distance_weighting':
-            return self.inverse_distance_weighting(train_data, train_labels, test_row, neighbors)
-        elif self.voting_policy == 'shepard':
-            return self.shepard_vote(train_data, train_labels, test_row, neighbors)
-        else:
-            raise ValueError(f"Unsupported voting policy: {self.voting_policy}")
-
-    def majority_class_vote(self, train_labels: pd.Series, neighbors: List[int]) -> int:
-        """
-        Majority class voting: Return the most common class among the neighbors.
-        """
-        neighbor_labels = train_labels.iloc[neighbors]
-        return neighbor_labels.mode()[0]  # Get the most frequent label
-
-    def inverse_distance_weighting(self, train_data: pd.DataFrame, train_labels: pd.Series, test_row: pd.Series, neighbors: List[int]) -> float:
-        """
-        Inverse distance weighting: Weight the class labels by the inverse of their distances.
-        """
-        distances = [self.distance_function(train_data.iloc[neighbor], test_row) for neighbor in neighbors]
-        # Avoid division by zero
-        weights = [1 / (d + 1e-5) for d in distances]  # Add a small constant to avoid division by zero
-        weighted_labels = train_labels.iloc[neighbors] * weights
-        return weighted_labels.sum() / sum(weights)
-
-    def shepard_vote(self, train_data: pd.DataFrame, train_labels: pd.Series, test_row: pd.Series, neighbors: List[int]) -> float:
-        """
-        Shepard's method: Use a power-based weighting.
-        """
-        distances = [self.distance_function(train_data.iloc[neighbor], test_row) for neighbor in neighbors]
-        weights = [(1 / (d + 1e-5)) ** 2 for d in distances]  # Shepard's weighting (power of 2)
-        weighted_labels = train_labels.iloc[neighbors] * weights
-        return weighted_labels.sum() / sum(weights)
-
-    def fit(self, train_data: pd.DataFrame, train_labels: pd.Series):
+    def fit(self, train_features: pd.DataFrame, train_labels: pd.Series):
         """
         Fit the kNN model with training data and labels.
         """
-        self.train_data = KNNData(data=train_data).data
+        weights = self.get_weights(train_features)
+        self.train_features = train_features.multiply(weights, axis=1)
         self.train_labels = train_labels
+        #self.distance_matrix = self.compute_distance_matrix(self.train_features)
 
-    def predict(self, test_data: pd.DataFrame) -> List[Union[int, float]]:
+    def get_weights(self, train_features: pd.DataFrame) -> np.ndarray:
+        if self.weighting_method == 'equal_weight':
+            return np.ones(train_features.shape[1])
+        if self.weighting_method == 'OTHER1_weight':
+            return np.ones(train_features.shape[1])
+        if self.weighting_method == 'OTHER2_weight':
+            return np.ones(train_features.shape[1])
+        else:
+            raise ValueError(f"Unsupported weighting method: {self.weighting_method}")
+
+    def compute_distance_matrix(self, train_features: pd.DataFrame) -> np.ndarray:
+        """
+        Compute the distance matrix between all pairs of training examples.
+        """
+        n_samples = train_features.shape[0]
+        distance_matrix = np.zeros((n_samples, n_samples))
+
+        for i in range(n_samples):
+            for j in range(i+1, n_samples):
+                distance = self.get_distance(train_features.iloc[i], train_features.iloc[j])
+                distance_matrix[i, j] = distance
+                distance_matrix[j, i] = distance  # Symmetric matrix
+
+        return distance_matrix
+
+    def get_distance(self, vec1: pd.Series, vec2: pd.Series) -> float:
+        """
+        Compute the distance between two vectors based on the selected metric.
+        """
+        if self.distance_metric == 'euclidean_distance':
+            return self.euclidean_distance(vec1, vec2)
+        elif self.distance_metric == 'manhattan_distance':
+            return self.manhattan_distance(vec1, vec2)
+        elif self.distance_metric == 'clark_distance':
+            return self.clark_distance(vec1, vec2)
+        else:
+            raise ValueError(f"Unsupported distance function: {self.distance_metric}")
+
+    @staticmethod
+    def euclidean_distance(vec1: pd.Series, vec2: pd.Series) -> float:
+        """
+        Euclidean distance metric.
+        """
+        return np.sqrt(np.sum((vec1 - vec2) ** 2))
+
+    @staticmethod
+    def manhattan_distance(vec1: pd.Series, vec2: pd.Series) -> float:
+        """
+        Manhattan distance metric.
+        """
+        return np.sum(np.abs(vec1 - vec2))
+
+    @staticmethod
+    def clark_distance(vec1: pd.Series, vec2: pd.Series) -> float:
+        """
+        Clark distance metric.
+        """
+        numerator = np.abs(vec1 - vec2)
+        denominator = vec1 + vec2
+        squared_ratio = (numerator / denominator) ** 2
+
+        squared_ratio = squared_ratio.replace([np.inf, -np.inf], np.nan).dropna()
+
+        return np.sqrt(squared_ratio.sum())
+
+    def get_neighbors(self, test_row: pd.Series) -> tuple[Any, Any]:
+        """
+        Identify the k nearest neighbors for a given test row.
+        """
+        distances = [(index, self.get_distance(test_row, self.train_features.iloc[index])) for index in range(len(self.train_features))]
+        sorted_distances = sorted(distances, key=lambda x: x[1])
+        neighbors_idx = [index for index, _ in sorted_distances[:self.k]]
+
+        neighbors_features = self.train_features.iloc[neighbors_idx]
+        neighbors_labels = self.train_labels.iloc[neighbors_idx]
+
+        return neighbors_features, neighbors_labels
+
+    def classify(self, test_row: pd.Series) -> Union[int, float]:
+        """
+        Classify a single example using k-nearest neighbors.
+        """
+        neighbors_features, neighbors_labels = self.get_neighbors(test_row)
+
+        if self.voting_policy == 'majority_class':
+            return self.majority_class_vote(neighbors_labels)
+        elif self.voting_policy == 'inverse_distance_weighted':
+            return self.inverse_distance_weighted(neighbors_features, neighbors_labels, test_row)
+        elif self.voting_policy == 'shepard':
+            return self.shepard_vote(neighbors_features, neighbors_labels, test_row)
+        else:
+            raise ValueError(f"Unsupported voting policy: {self.voting_policy}")
+
+    def majority_class_vote(self, neighbors_labels) -> int:
+        """
+        Majority class voting: Return the most common class among the neighbors.
+        """
+        return neighbors_labels.mode()[0]
+
+    def inverse_distance_weighted(self, neighbors_features, neighbors_labels, test_row: pd.Series) -> float:
+        """
+        Inverse distance weighting: Weight the class labels by the inverse of their distances.
+        """
+        distances = [self.get_distance(test_row, row) for _, row in neighbors_features.iterrows()]
+        weights = [1 / (d + 1e-5) for d in distances]
+        class_vote = {}
+
+        for i, weight in enumerate(weights):
+            label = neighbors_labels.iloc[i]
+            if label not in class_vote:
+                class_vote[label] = 0
+            class_vote[label] += weight
+
+        max_vote_label = max(class_vote, key=class_vote.get)
+        return max_vote_label
+
+    def shepard_vote(self, neighbors_features, neighbors_labels, test_row: pd.Series) -> float:
+        """
+        Shepard's method: Use a power-based weighting.
+        """
+        distances = [self.get_distance(test_row, row) for _, row in neighbors_features.iterrows()]
+        weights = [np.exp(-d) for d in distances]
+        class_vote = {}
+
+        for i, weight in enumerate(weights):
+            label = neighbors_labels.iloc[i]
+            if label not in class_vote:
+                class_vote[label] = 0
+            class_vote[label] += weight
+
+        max_vote_label = max(class_vote, key=class_vote.get)
+        return max_vote_label
+
+    def predict(self, test_features: pd.DataFrame) -> List[Union[int, float]]:
         """
         Predict the class labels for the test set.
         """
-        test_data = KNNData(data=test_data).data
-        predictions = [self.classify(self.train_data, self.train_labels, row) for _, row in test_data.iterrows()]
+        predictions = [self.classify(row) for _, row in test_features.iterrows()]
         return predictions
+
+    def score(self, test_features: pd.DataFrame, test_labels: pd.Series) -> float:
+        """
+        Calculate the accuracy of the kNN classifier on the test data.
+        """
+        predictions = self.predict(test_features)
+        correct_predictions = sum(pred == true for pred, true in zip(predictions, test_labels))
+        accuracy = correct_predictions / len(test_labels)
+        return accuracy
