@@ -3,7 +3,7 @@ import pandas as pd
 import time
 from sklearn.metrics import accuracy_score
 from Reader import DataPreprocessor
-from KNN import KNNAlgorithm
+from KNN import KNNAlgorithm, apply_weighting_method
 
 
 # # 0. Load from .arff and preprocess the training data, then save it to .joblib
@@ -31,15 +31,15 @@ distance_metrics = ['euclidean_distance', 'manhattan_distance', 'clark_distance'
 voting_policies = ['majority_class', 'inverse_distance_weighted', 'shepard']
 weighting_methods = ['equal_weight', 'information_gain_weight', 'reliefF_weight']
 
-results = []
-start_time = time.time()
-
-
-
+def get_weighted_features(method, k):
+    if method in ['equal_weight', 'information_gain_weight']:
+        return weighted_train_features[(method, None)]  # Ignore k, always return the same value
+    else:
+        return weighted_train_features[(method, k)]
 
 # Function to evaluate the KNN model
 def evaluate_knn(params):
-    k, dist_metric, vote_policy, weighting_method, train_features, train_labels, test_features, test_labels = params
+    k, dist_metric, vote_policy, weighting_method, weighted_train_features, train_labels, test_features, test_labels = params
     print(
         "Executing configuration:\n"
         f" - k: {k}\n"
@@ -47,9 +47,10 @@ def evaluate_knn(params):
         f" - Voting Policy: {vote_policy}\n"
         f" - Weighting Method: {weighting_method}\n"
     )
+
     # Create the KNNAlgorithm object with the corresponding configuration
     knn = KNNAlgorithm(k=k, distance_metric=dist_metric, voting_policy=vote_policy, weighting_method=weighting_method)
-    knn.fit(train_features, train_labels)
+    knn.fit(get_weighted_features(weighting_method, k), train_labels)
 
     # Make predictions on the test data
     predictions = knn.predict(test_features)
@@ -80,8 +81,34 @@ if __name__ == '__main__':
         f" - Number of Test Labels: {len(test_labels)}")
 
     # 5. Use a pool of 4 workers to parallelize the evaluation
-    with multiprocessing.Pool(processes=4) as pool:
-        results = pool.map(evaluate_knn, params_list)
+    # def collect_results(result):
+    #     results.append(result)
+
+    # ctx = multiprocessing.get_context('spawn')
+    # with ctx.Pool(processes=8) as pool:
+    #     results = []
+    #     for params in params_list:
+    #         pool.apply_async(evaluate_knn, args=(params,), callback=collect_results)
+    #     pool.close()
+    #     pool.join()
+    start_time = time.time()
+    # Pre-process the weighted features for all weighting methods, to avoid repeating the calculations
+    weighted_train_features = {
+        ('equal_weight', None): apply_weighting_method(train_features, train_labels, 'equal_weight'),
+        ('information_gain_weight', None): apply_weighting_method(train_features, train_labels,
+                                                                  'information_gain_weight')
+    }
+
+    # The reliefF weighting method depends on the value of k, while the other 2 do not
+    for k in [1, 3, 5, 7]:
+        weighted_train_features[('reliefF_weight', k)] = apply_weighting_method(train_features, train_labels,
+                                                                                'reliefF_weight', k)
+
+    results = []
+
+    for params in params_list:
+        result = evaluate_knn(params)
+        results.append(result)
 
 
     elapsed_time = time.time() - start_time
@@ -101,11 +128,18 @@ if __name__ == '__main__':
     print(f"Weighting Method: {best_result['weighting_method']}")
     print(f"Accuracy: {best_result['accuracy']:.4f}\n")
 
-    print(results_df)
-    
     # 8. Display pivot tables for each value of k
-    # for k in [1, 3, 5, 7]:
-    #     print(f"Accuracy Table for k = {k}")
-    #     pivot_table = results_df[results_df['k'] == k].pivot(index='distance_metric', columns='voting_policy', values='accuracy')
-    #     print(pivot_table)
-    #     print("\n")
+
+    # Set pandas options to display the entire table
+    pd.set_option('display.max_columns', None)  # Show all columns
+    pd.set_option('display.expand_frame_repr', False)  # Prevent line breaks for large dataframes
+
+    for k in [1, 3, 5, 7]:
+        print(f"Accuracy Table for k = {k}")
+        pivot_table = results_df[results_df['k'] == k].pivot(
+            index=['distance_metric', 'weighting_method'],
+            columns='voting_policy',
+            values='accuracy'
+        )
+        print(pivot_table)
+        print("\n")
