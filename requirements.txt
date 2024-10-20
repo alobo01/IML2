@@ -1,7 +1,9 @@
 pydantic
-scikit-learn
-pandas
-numpy
-joblib
-matplotlib
+scikit-learn~=1.5.2
+pandas~=2.2.3
+numpy~=2.0.2
+joblib~=1.4.2
+matplotlib~=3.9.2
 sklearn_relief
+scipy~=1.13.1
+seaborn~=0.13.2
