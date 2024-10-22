@@ -67,10 +67,7 @@ def process_model(fold_number, model_data, params):
     knn.fit(weighted_train_features, train_labels)
     model_metrics = evaluate_model(knn, test_features, test_labels)
 
-    model_metrics['k'] = k
-    model_metrics['distance_metric'] = dist_metric
-    model_metrics['voting_policy'] = vote_policy
-    model_metrics['weighting_method'] = weighting_method
+    model_metrics['configuration'] = (k, dist_metric, vote_policy, weighting_method)
 
     return fold_number, model_metrics
 
@@ -95,10 +92,7 @@ def main(dataset_path):
     metrics = []
 
     results = {
-        'k': [],
-        'distance_metric' : [],
-        'voting_policy' : [],
-        'weighting_method' : [],
+        'method': [],
         'accuracy': [],
         'roc_auc': [],
         'recall': [],
@@ -127,14 +121,14 @@ def main(dataset_path):
             fold_number, model_metrics = result
             metrics.append(model_metrics)
             k, dist_metric, vote_policy, weighting_method = params
-            print(f"Completed fold {fold_number} for configuration:"
+            print(f"Completed fold {fold_number} for configuration:\n"
                   f" - k: {k}\n"
                   f" - Distance Metric: {dist_metric}\n"
                   f" - Voting Policy: {vote_policy}\n"
                   f" - Weighting Method: {weighting_method}\n")
 
         ctx = multiprocessing.get_context('spawn')
-        with ctx.Pool(processes=8) as pool:
+        with ctx.Pool(processes=10) as pool:
             for params in params_list:
                 k, dist_metric, vote_policy, weighting_method = params
                 model_data = (get_weighted_features(weighted_train_features, weighting_method, k),
@@ -147,10 +141,7 @@ def main(dataset_path):
         k, dist_metric, vote_policy, weighting_method = params
 
         # Gather the metrics of each model configuration across folds
-        model_metrics = [m for m in metrics if m['k'] == k
-                                            and m['distance_metric'] == dist_metric
-                                            and m['voting_policy'] == vote_policy
-                                            and m['weighting_method'] == weighting_method]
+        model_metrics = [m for m in metrics if m['configuration'] == (k, dist_metric, vote_policy, weighting_method)]
 
         # Calculate mean metrics over the folds
         mean_metrics = {
@@ -163,10 +154,7 @@ def main(dataset_path):
         }
 
         # Save metrics for this method
-        results['k'].append(k)
-        results['distance_metric'].append(dist_metric)
-        results['voting_policy'].append(vote_policy)
-        results['weighting_method'].append(weighting_method)
+        results['method'].append(str((k, dist_metric, vote_policy, weighting_method)))
         for metric, value in mean_metrics.items():
             results[metric].append(value)
 
