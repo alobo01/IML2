@@ -3,7 +3,7 @@ import random
 
 import pandas as pd
 
-from KNN import KNNAlgorithm
+from classes.KNN import KNNAlgorithm
 from pandas import DataFrame
 
 def distance_matrix(X, Y):
