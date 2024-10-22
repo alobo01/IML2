@@ -5,14 +5,6 @@ import seaborn as sns
 from io import BytesIO
 import base64
 
-#Pedro
-
-#Bruno
-
-#Mari
-
-#Antonio
-
 def read_pickle_and_generate_report(pickle_file, output_html='results_report.html'):
     # Load results from pickle file
     with open(pickle_file, 'rb') as f:
@@ -34,6 +26,8 @@ def read_pickle_and_generate_report(pickle_file, output_html='results_report.htm
 
         # Plot the metrics for each method
         metrics = ['accuracy', 'roc_auc', 'recall', 'precision', 'f1_score', 'reduction_percentage']
+
+        #df["method"] = df["method"].apply(str)
 
         for metric in metrics:
             plt.figure(figsize=(10, 6))
@@ -57,5 +51,15 @@ def read_pickle_and_generate_report(pickle_file, output_html='results_report.htm
     print(f"Report saved as {output_html}")
 
 
-# Usage
+#Pedro
+
+#Bruno
+
+#read_pickle_and_generate_report('knn_comparison_results.pkl',output_html="results_knn_report.html")
+
+
+#Mari
+
+#Antonio
+
 read_pickle_and_generate_report('knn_reduction_comparison_results.pkl',output_html="results_reduction_report.html")
