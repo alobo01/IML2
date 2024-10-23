@@ -136,5 +136,5 @@ def main(dataset_path):
 
 
 if __name__ == "__main__":
-    dataset_path = '..\\datasets\\hepatitis'  # Example path
+    dataset_path = '..\\datasets\\hepatitis'
     main(dataset_path)
