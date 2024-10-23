@@ -156,7 +156,8 @@ class ReductionKNN:
         l = labels_copy.values.copy()
         old_indices = points.index.to_list()
         knn = NearestNeighbors(n_neighbors=k+1)
-        knn.fit(p)
+        knn = KNNAlgorithm()
+        knn.fit(points, labels)
 
         discarded_points = set()
 
@@ -171,32 +172,32 @@ class ReductionKNN:
                     correctly_classified_points += 1
             return correctly_classified_points
 
-        def get_neighbors(row):
-            _, indices = knn.kneighbors(row.reshape(1, -1))
-            return set(indices.flatten())
+        def get_neighbors(index):
+            n_features, _ = knn.get_neighbors(points.iloc[[index]])
+            return set(n_features.index.to_list())
 
-        all_neighbors = [get_neighbors(row) for row in p]
+        all_neighbors = [get_neighbors(row) for row in range(len(p))]
 
-        deleted_point = True
-        iterations = 0
-        while deleted_point:
-            deleted_point = False
-            iterations += 1
-            print("iterations: ", iterations)
+        point_deleted = True
+        while point_deleted:
+            point_deleted = False
             for i, row in enumerate(points.values):
                 if i in discarded_points:
                     continue
                 neighbors = all_neighbors[i]
                 if neighbors.intersection(discarded_points): # if neighbors contain a discarded point
-                    knn.fit(points.loc[[index for index in old_indices if index]].values)
-                    all_neighbors[i] = get_neighbors(p[i]) # re-compute the neighbors
-                neighbors_without_p = [x for x in neighbors if x != i]
-                no_with = get_no_of_correct_classes(neighbors)
-                no_without = get_no_of_correct_classes(neighbors_without_p)
+                    updated_old_indices = [index for index in old_indices if index]
+                    knn.fit(points.loc[updated_old_indices], labels.loc[updated_old_indices])
+                    all_neighbors[i] = get_neighbors(i) # re-compute the neighbors
+                    neighbors = all_neighbors[i]
+                neighbors_including_itself = neighbors.copy()
+                neighbors_including_itself.add(i)
+                no_with = get_no_of_correct_classes(neighbors_including_itself)
+                no_without = get_no_of_correct_classes(neighbors)
                 if no_without >= no_with:
                     discarded_points.add(i)
                     old_indices[i] = None
-                    deleted_point = True
+                    point_deleted = True
 
         return [index for index in old_indices if index]
 
