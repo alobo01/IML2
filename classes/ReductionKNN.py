@@ -1,7 +1,12 @@
 import numpy as np
 import random
+from collections import defaultdict
+
+from sklearn.neighbors import NearestNeighbors
 
 import pandas as pd
+
+from collections import Counter
 
 from classes.KNN import KNNAlgorithm
 from pandas import DataFrame
@@ -71,12 +76,14 @@ class ReductionKNN:
             reduced_indices = self.repeated_edited_nearest_neighbor(features, labels)
         elif reductionMethod == "IB2":
             reduced_indices = self.ib2(features, labels)
+        elif reductionMethod == "DROP1":
+            reduced_indices = self.DROP1(features, labels)
         else:
             raise ValueError(f"Reduction method {reductionMethod} not recognized.")
 
         reduced_data = data.loc[reduced_indices]
 
-        self.reducedKNN.fit(reduced_data.iloc[:, :-1], reduced_data.iloc[:, -1])
+        self.reducedKNN.fit(reduced_indices[0], reduced_indices[1])
 
         return reduced_data
 
@@ -86,7 +93,7 @@ class ReductionKNN:
         based on a generalized absorption criterion. CNN is when rho=0
 
         Citation:
-        Nikolaidis, K., Rodriguez, J. J., & Goulermas, J. Y. (2011). Generalized Condensed Nearest 
+        Nikolaidis, K., Rodrigu ez, J. J., & Goulermas, J. Y. (2011). Generalized Condensed Nearest
         Neighbor for Prototype Reduction. In 2011 IEEE International Conference on Systems, Man, 
         and Cybernetics (pp. 2885-2890). IEEE.
 
@@ -139,6 +146,46 @@ class ReductionKNN:
                     absorbed[i] = True
 
         return prototype_indices
+
+    def DROP1(self, points: pd.DataFrame, labels: pd.DataFrame, k=3):
+        points.sort_index(inplace=True)
+        labels.sort_index(inplace=True)
+        p = points.values.copy()
+        l = labels.values.copy()
+        old_indices = points.index.to_list()
+        knn = NearestNeighbors(n_neighbors=k+1)
+        knn.fit(p)
+
+        discarded_points = set()
+
+        def get_no_of_correct_classes(list_of_neighbors):
+            correctly_classified_points = 0
+            for point in list_of_neighbors:
+                if point in discarded_points:
+                    continue
+                list_excluding_itself = [x for x in list_of_neighbors if x != point or x in discarded_points]
+                predicted = Counter(l[n] for n in list_excluding_itself).most_common(1)[0][0]
+                if predicted == l[point]:
+                    correctly_classified_points += 1
+            return correctly_classified_points
+
+        def get_neighbors(row):
+            _, indices = knn.kneighbors(row.reshape(1, -1))
+            return set(indices.flatten())
+
+        all_neighbors = [get_neighbors(row) for row in p]
+        for i, row in enumerate(points.values):
+            neighbors = all_neighbors[i]
+            if neighbors.intersection(discarded_points): # if neighbors contain a discarded point
+                all_neighbors[i] = get_neighbors(p[i]) # re-compute the neighbors
+            neighbors_without_p = [x for x in neighbors if x != i]
+            no_with = get_no_of_correct_classes(neighbors)
+            no_without = get_no_of_correct_classes(neighbors_without_p)
+            if no_without >= no_with:
+                discarded_points.add(i)
+                del old_indices[i]
+
+        return old_indices
 
     def repeated_edited_nearest_neighbor(self, features: DataFrame, labels: DataFrame, k=3):
         """
