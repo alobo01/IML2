@@ -83,7 +83,7 @@ class ReductionKNN:
 
         reduced_data = data.loc[reduced_indices]
 
-        self.reducedKNN.fit(reduced_indices[0], reduced_indices[1])
+        self.reducedKNN.fit(reduced_data, reduced_data.loc[:, "Label"])
 
         return reduced_data
 
@@ -147,11 +147,13 @@ class ReductionKNN:
 
         return prototype_indices
 
-    def DROP1(self, points: pd.DataFrame, labels: pd.DataFrame, k=3):
+    def DROP1(self, features: pd.DataFrame, labels: pd.DataFrame, k=3):
+        points = features.copy()
+        labels_copy = labels.copy()
         points.sort_index(inplace=True)
-        labels.sort_index(inplace=True)
+        labels_copy.sort_index(inplace=True)
         p = points.values.copy()
-        l = labels.values.copy()
+        l = labels_copy.values.copy()
         old_indices = points.index.to_list()
         knn = NearestNeighbors(n_neighbors=k+1)
         knn.fit(p)
@@ -174,18 +176,29 @@ class ReductionKNN:
             return set(indices.flatten())
 
         all_neighbors = [get_neighbors(row) for row in p]
-        for i, row in enumerate(points.values):
-            neighbors = all_neighbors[i]
-            if neighbors.intersection(discarded_points): # if neighbors contain a discarded point
-                all_neighbors[i] = get_neighbors(p[i]) # re-compute the neighbors
-            neighbors_without_p = [x for x in neighbors if x != i]
-            no_with = get_no_of_correct_classes(neighbors)
-            no_without = get_no_of_correct_classes(neighbors_without_p)
-            if no_without >= no_with:
-                discarded_points.add(i)
-                del old_indices[i]
 
-        return old_indices
+        deleted_point = True
+        iterations = 0
+        while deleted_point:
+            deleted_point = False
+            iterations += 1
+            print("iterations: ", iterations)
+            for i, row in enumerate(points.values):
+                if i in discarded_points:
+                    continue
+                neighbors = all_neighbors[i]
+                if neighbors.intersection(discarded_points): # if neighbors contain a discarded point
+                    knn.fit(points.loc[[index for index in old_indices if index]].values)
+                    all_neighbors[i] = get_neighbors(p[i]) # re-compute the neighbors
+                neighbors_without_p = [x for x in neighbors if x != i]
+                no_with = get_no_of_correct_classes(neighbors)
+                no_without = get_no_of_correct_classes(neighbors_without_p)
+                if no_without >= no_with:
+                    discarded_points.add(i)
+                    old_indices[i] = None
+                    deleted_point = True
+
+        return [index for index in old_indices if index]
 
     def repeated_edited_nearest_neighbor(self, features: DataFrame, labels: DataFrame, k=3):
         """
