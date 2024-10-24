@@ -1,4 +1,4 @@
-
+import heapq
 from typing import List, Union, Any, Callable
 
 from pandas import Series
@@ -94,18 +94,31 @@ class KNNAlgorithm:
 
         return np.sqrt(squared_ratio.sum())
 
-    def get_neighbors(self, test_row: pd.Series) -> tuple[Any, Any]:
+    def get_neighbors(self, test_row: pd.Series, custom_k = None, return_distances = False) -> tuple[Any, Any]:
         """
         Identify the k nearest neighbors for a given test row.
         """
+        if not custom_k:
+            custom_k = self.k
         distances = [(index, self.distance(test_row, self.train_features.iloc[index])) for index in range(len(self.train_features))]
-        sorted_distances = sorted(distances, key=lambda x: x[1])
-        neighbors_idx = [index for index, _ in sorted_distances[:self.k]]
+        #sorted_distances = sorted(distances, key=lambda x: x[1])
+        all_distances = heapq.nsmallest(custom_k, distances, key=lambda x: x[1])
+        if return_distances:
+            neighbors_idx, distances = [], []
+            for (idx,distance) in all_distances:
+                neighbors_idx.append(idx)
+                distances.append(distance)
+            neighbors_features = self.train_features.iloc[neighbors_idx]
+            neighbors_labels = self.train_labels.iloc[neighbors_idx]
+            return (neighbors_features, distances), neighbors_labels
 
-        neighbors_features = self.train_features.iloc[neighbors_idx]
-        neighbors_labels = self.train_labels.iloc[neighbors_idx]
+        else:
+            neighbors_idx = [index for index, _ in all_distances]
 
-        return neighbors_features, neighbors_labels
+            neighbors_features = self.train_features.iloc[neighbors_idx]
+            neighbors_labels = self.train_labels.iloc[neighbors_idx]
+
+            return neighbors_features, neighbors_labels
 
     def classify(self, test_row: pd.Series) -> Union[int, float]:
         """
