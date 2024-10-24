@@ -76,8 +76,10 @@ class ReductionKNN:
             reduced_indices = self.repeated_edited_nearest_neighbor(features, labels)
         elif reductionMethod == "IB2":
             reduced_indices = self.ib2(features, labels)
-        elif reductionMethod == "DROP1":
-            reduced_indices = self.DROP1(features, labels)
+        elif reductionMethod == "DROP3":
+            reduced_indices = self.drop3(features, labels)
+        elif reductionMethod == "FENN":
+            reduced_indices = self.fast_enn(features, labels)
         else:
             raise ValueError(f"Reduction method {reductionMethod} not recognized.")
 
@@ -201,6 +203,108 @@ class ReductionKNN:
 
         return [index for index in old_indices if index]
 
+    def drop3(self, features: pd.DataFrame, labels: pd.Series, n_neighbors: int = 3) -> list:
+        """
+        DROP3 algorithm for selecting points to keep based on majority voting of their neighbors' neighbors.
+
+        Parameters:
+        - features: pd.DataFrame, the feature vectors of the dataset.
+        - labels: pd.Series, the corresponding labels for the dataset.
+        - n_neighbors: int, the number of neighbors to consider (default is 3).
+
+        Returns:
+        - list: The indices of the points in the original dataset that should be kept.
+        """
+
+        # First step, apply a single ENN pass to remove noisy points
+        enn_removed_indices = self.fast_enn(features, labels)
+        features.drop(index=enn_removed_indices)
+        labels.drop(index=enn_removed_indices)
+
+        # Reset indices for features and labels to create a continuous index
+        original_index = features.index
+        features.reset_index(drop=True, inplace=True)
+        labels.reset_index(drop=True, inplace=True)
+
+        # Convert to numpy arrays for faster processing
+        X = features.values
+        y = labels.values.ravel() if labels.values.ndim > 1 else labels.values
+
+        nn = NearestNeighbors(n_neighbors=n_neighbors + 1)
+        nn.fit(X)
+        distances, indices = nn.kneighbors(X)
+
+        # Calculate average distance to enemy points
+        enemy_distances = []
+        for i in range(len(X)):
+            current_class = y[i]
+            enemy_indices = [idx for idx in indices[i][1:] if y[idx] != current_class]
+
+            if enemy_indices:
+                avg_enemy_dist = np.mean([distances[i][indices[i].tolist().index(idx)] for idx in enemy_indices])
+            else:
+                avg_enemy_dist = float('inf')
+
+            enemy_distances.append(avg_enemy_dist)
+
+        sort_indices = np.argsort(enemy_distances)
+        sorted_features = pd.DataFrame(X[sort_indices], columns=features.columns)
+        sorted_labels = pd.Series(y[sort_indices])
+
+        # Create a dictionary to map each row index to its nearest neighbors
+        knn = NearestNeighbors(n_neighbors=n_neighbors + 1)  # +1 to include the point itself
+        knn.fit(sorted_features)
+
+        # Dictionary of neighbors: {index of the point: indices of its neighbors}
+        neighbors = dict()
+        for row_index, row_value in zip(sorted_features.index.values, sorted_features.values):
+            neighbors[row_index] = knn.kneighbors(row_value.reshape(1, -1))[1][0]  # Neighbors for the current point
+
+        removed_indices = []
+        remaining_indices = sorted_features.index.to_list()
+
+        while True:
+            to_remove = []
+
+            # Iterate through remaining points
+            for point_idx in remaining_indices:
+                point_label = sorted_labels.loc[point_idx]
+                point_neighbors = neighbors[point_idx][1:]  # Exclude the point itself
+
+                count_with = 0
+                count_without = 0
+                # Check each neighbor's neighbors (the neighbors of the current point)
+                for neighbor_idx in point_neighbors:
+                    neighbor_neighbors = neighbors[neighbor_idx][1:]  # Exclude itself
+
+                    # Get the labels of the neighbor's neighbors
+                    neighbors_neighbor_labels = sorted_labels.loc[neighbor_neighbors].values
+
+                    # Check the majority label among the neighbor's neighbors, without including the original point
+                    without_point = np.argmax(np.bincount(neighbors_neighbor_labels))
+
+                    # Check the majority label when including the original point's label
+                    with_point = np.argmax(np.bincount(np.append(neighbors_neighbor_labels, point_label)))
+
+                    # If the class of the neighbor is classified correctly without the point
+                    if without_point == sorted_labels.loc[neighbor_idx]:
+                        count_without += 1
+                    # If the class of the neighbor is classified correctly with the point
+                    if with_point == sorted_labels.loc[neighbor_idx]:
+                        count_with += 1
+
+                if count_with <= count_without:
+                    to_remove.append(point_idx)
+
+            if not to_remove:
+                break
+
+            removed_indices.extend(to_remove)
+            remaining_indices = [idx for idx in remaining_indices if idx not in to_remove]
+
+        # Return the original indices of the points to keep
+        return original_index[remaining_indices].tolist()
+
     def repeated_edited_nearest_neighbor(self, features: DataFrame, labels: DataFrame, k=3):
         """
         Repeated Edited Nearest Neighbor (RENN) applies the ENN algorithm iteratively until all instances 
@@ -240,6 +344,20 @@ class ReductionKNN:
 
         return absorbed[absorbed].index.tolist()
 
+    def fast_enn(self, features: DataFrame, labels: DataFrame, k=3):
+        absorbed = pd.Series(True, index=features.index)
+
+        knn = NearestNeighbors(n_neighbors=k)
+        knn.fit(features[absorbed], labels[absorbed])
+
+        for i in features.index[absorbed]:
+            _, neighbors = knn.kneighbors(features.loc[i].values.reshape(1, -1))
+            neighbor_labels = labels.values[neighbors[0][1:]] # excluding the point itself
+            # If majority of k neighbors disagree, remove the point
+            if np.argmax(np.bincount(neighbor_labels)) != labels[i]:
+                absorbed[i] = False
+
+        return absorbed[absorbed].index.tolist()
     def ib2(self, features: DataFrame, labels: DataFrame):
         """
         The IB2 algorithm is incremental: it starts with S initially empty, and each 

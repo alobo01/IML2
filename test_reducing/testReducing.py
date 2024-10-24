@@ -88,7 +88,7 @@ def main():
     # Plot the original dataset
 
     # Apply each reduction method and plot the results
-    for i, method in enumerate(['IB2']):
+    for i, method in enumerate(['DROP3']):
         # Measure execution time for each reduction
         start_time = time.time()
         reduced_data = reduction_knn.apply_reduction(train_data, method)
