@@ -10,7 +10,7 @@ from sklearn.metrics import accuracy_score
 
 
 # Step 1: Load and preprocess ARFF dataset
-def load_and_preprocess_arff(filepath, class_column='class'):
+def load_and_preprocess_arff(filepath, class_column='Class'):
     """Load ARFF data and preprocess it into a Pandas DataFrame."""
     # Load the ARFF dataset
     data, meta = arff.loadarff(filepath)
@@ -29,17 +29,77 @@ def load_and_preprocess_arff(filepath, class_column='class'):
     return df, features, features_labels
 
 
-# Step 2: Preprocess categorical data using Label Encoding
+# Step 2: Preprocess data by discretizing numeric features and label encoding categorical features
 def label_encode_features(features):
-    """Apply label encoding to all categorical features."""
+    """Make numeric features discrete with 20 bins and label encode string features."""
+
+
+    features = features.copy()  # To avoid modifying the original dataframe
+
+    # Identify numeric and categorical columns
+    numeric_cols = features.select_dtypes(include=['number']).columns
+    categorical_cols = features.select_dtypes(include=['object', 'category', 'string']).columns
+
+    # Discretize numeric columns into 20 bins
+    for col in numeric_cols:
+        features[col] -= np.min(features[col])
+        features[col] /= np.max(features[col])
+        features[col] = pd.cut(features[col], bins=5, labels=False)
+
+    # Label encode categorical columns
     le = LabelEncoder()
-    for col in features.columns:
+    for col in categorical_cols:
         features[col] = le.fit_transform(features[col].astype(str))
+
     return features
+
+def kl_divergence(P, Q):
+    P = np.asarray(P, dtype=np.float64)
+    Q = np.asarray(Q, dtype=np.float64)
+    # Ensure no division by zero and log of zero
+    P = np.where(P == 0, 1e-10, P)
+    Q = np.where(Q == 0, 1e-10, Q)
+    return np.sum(P * np.log(P / Q))
+
+# Step 3: Compute KL Divergence for class distribution with respect to the overall class distribution
+def compute_kl_divergence_by_feature(df, features, class_column='Class', verbose=False):
+    """Compute KL divergence between the class distribution of the entire dataset and
+    the class distribution of subsets filtered by feature values."""
+
+    # Get the overall class distribution in the dataset (the reference distribution)
+    overall_class_distribution = df[class_column].value_counts(normalize=True)
+    all_classes = overall_class_distribution.index
+    kl_divergence_results = {}
+
+    for feature in features.columns:
+        feature_kl = {}
+        for feature_value in df[feature].unique():
+            # Filter dataset by the feature value
+            filtered_df = df[df[feature] == feature_value]
+
+            # Get class distribution for this filtered dataset
+            filtered_class_distribution = filtered_df[class_column].value_counts(normalize=True)
+
+            # Ensure all classes are present in the filtered distribution, filling missing ones with 0
+            filtered_class_distribution = filtered_class_distribution.reindex(all_classes, fill_value=0)
+
+            # Compute KL divergence from the overall class distribution to the filtered class distribution
+            kl_div = kl_divergence(filtered_class_distribution, overall_class_distribution)
+
+            feature_kl[feature_value] = kl_div
+
+            # Print detailed KL divergence information if verbose is enabled
+            if verbose:
+                print(f"Feature: {feature}, Value: {feature_value}, Filtered Class Distribution: {filtered_class_distribution.to_dict()}, KL Divergence: {kl_div}")
+
+        kl_divergence_results[feature] = feature_kl
+
+    return kl_divergence_results
+
 
 
 # Step 3: Compute Negative Entropy for each feature value and class with verbose option
-def compute_negative_entropy(df, features, class_column='class', verbose=False):
+def compute_negative_entropy(df, features, class_column='Class', verbose=False):
     """Compute negative entropy for each feature and return the results."""
     negative_entropy_results = {}
 
@@ -71,7 +131,7 @@ def compute_negative_entropy(df, features, class_column='class', verbose=False):
 
 
 # Step 4: Plot histograms for feature distribution by class
-def plot_feature_distributions_by_class(df, features, class_column='class'):
+def plot_feature_distributions_by_class(df, features, class_column='Class'):
     """Plot histograms for feature distributions, colored by class labels."""
     for feature in features.columns:
         # Create a histogram plot for each feature
@@ -98,7 +158,7 @@ def summarize_and_sort_entropy(negative_entropy_results):
         feature_entropy_summary[feature] = total_negative_entropy
 
     # Sort features by total negative entropy in descending order
-    sorted_features = sorted(feature_entropy_summary.items(), key=lambda x: x[1], reverse=True)
+    sorted_features = sorted(feature_entropy_summary.items(), key=lambda x: x[1], reverse=False)
 
     return sorted_features
 
@@ -145,20 +205,20 @@ def train_knn_with_top_features(df, features, features_labels, sorted_features, 
 # Main execution flow
 if __name__ == "__main__":
     # Load and preprocess the dataset
-    filepath = '../datasets/mushroom/mushroom.fold.000000.train.arff'
+    filepath = '../datasets/hepatitis/hepatitis.fold.000000.train.arff'
     df, features, features_labels = load_and_preprocess_arff(filepath)
 
     # Encode the features
     features = label_encode_features(features)
 
-    # Compute negative entropy with verbose output
-    negative_entropy_results = compute_negative_entropy(df, features, verbose=True)
+    # Compute KL divergence with verbose output
+    kl_divergence_results = compute_kl_divergence_by_feature(df, features, verbose=True)
 
     # Plot histograms for feature distributions by class
     plot_feature_distributions_by_class(df, features)
 
     # Summarize and sort features by total negative entropy
-    sorted_features = summarize_and_sort_entropy(negative_entropy_results)
+    sorted_features = summarize_and_sort_entropy(kl_divergence_results)
 
     # Calculate and display the number of classes (unique values) for each feature
     num_classes = calculate_number_of_classes(df, features)
