@@ -6,8 +6,6 @@ from sklearn.neighbors import NearestNeighbors
 
 import pandas as pd
 
-from collections import Counter
-
 from classes.KNN import KNNAlgorithm
 from pandas import DataFrame
 
@@ -18,6 +16,20 @@ class ReductionKNN:
     """
     Class for applying different reduction techniques to a dataset before 
     performing K-Nearest Neighbor (KNN) classification.
+
+    Summary of types:
+
+    A first category of techniques try to eliminate from the TS prototypes erroneously labeled, commonly
+    outliers, and at the same time, to “clean” the possible overlapping between regions of
+    different classes. These techniques are referred in the literature to as Editing, and the
+    resulting classification rule is known as Edited NN rule
+
+    A second group of PS techniques are aimed at selecting a certain subgroup of prototypes that behaves,
+    employing the 1-NN rule, in a similar way to the one obtained by using the totality of the TS.
+    This group of techniques are the so called Condensing algorithms and its corresponding Condensed NN rule
+
+
+
 
     Generalized Condensed Nearest Neighbor (GCNN) Implementation:
     The GCNN algorithm reduces the dataset using a generalized criterion to absorb
@@ -74,6 +86,8 @@ class ReductionKNN:
             reduced_indices = self.generalized_condensed_nearest_neighbor(features, labels)
         elif reductionMethod == "RENN":
             reduced_indices = self.repeated_edited_nearest_neighbor(features, labels)
+        elif reductionMethod == "EENTH":
+            reduced_indices = self.editing_algorithm_estimating_class_probabilities_and_threshold(features, labels)
         elif reductionMethod == "IB2":
             reduced_indices = self.ib2(features, labels)
         elif reductionMethod == "DROP3":
@@ -85,7 +99,7 @@ class ReductionKNN:
 
         reduced_data = data.loc[reduced_indices]
 
-        self.reducedKNN.fit(reduced_data, reduced_data.loc[:, "Label"])
+        self.reducedKNN.fit(reduced_data.iloc[:, :-1], reduced_data.iloc[:, -1])
 
         return reduced_data
 
@@ -95,7 +109,7 @@ class ReductionKNN:
         based on a generalized absorption criterion. CNN is when rho=0
 
         Citation:
-        Nikolaidis, K., Rodrigu ez, J. J., & Goulermas, J. Y. (2011). Generalized Condensed Nearest
+        Nikolaidis, K., Rodriguez, J. J., & Goulermas, J. Y. (2011). Generalized Condensed Nearest 
         Neighbor for Prototype Reduction. In 2011 IEEE International Conference on Systems, Man, 
         and Cybernetics (pp. 2885-2890). IEEE.
 
@@ -344,20 +358,6 @@ class ReductionKNN:
 
         return absorbed[absorbed].index.tolist()
 
-    def fast_enn(self, features: DataFrame, labels: DataFrame, k=3):
-        absorbed = pd.Series(True, index=features.index)
-
-        knn = NearestNeighbors(n_neighbors=k)
-        knn.fit(features[absorbed], labels[absorbed])
-
-        for i in features.index[absorbed]:
-            _, neighbors = knn.kneighbors(features.loc[i].values.reshape(1, -1))
-            neighbor_labels = labels.values[neighbors[0][1:]] # excluding the point itself
-            # If majority of k neighbors disagree, remove the point
-            if np.argmax(np.bincount(neighbor_labels)) != labels[i]:
-                absorbed[i] = False
-
-        return absorbed[absorbed].index.tolist()
     def ib2(self, features: DataFrame, labels: DataFrame):
         """
         The IB2 algorithm is incremental: it starts with S initially empty, and each 

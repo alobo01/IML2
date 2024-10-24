@@ -86,9 +86,10 @@ def main():
     fig.suptitle('Comparison of KNN Reduction Methods', fontsize=16)
 
     # Plot the original dataset
-
+    #methods = ['GCNN', 'RENN', 'IB2']
+    methods = ['EENTH']
     # Apply each reduction method and plot the results
-    for i, method in enumerate(['DROP3']):
+    for i, method in enumerate(methods):
         # Measure execution time for each reduction
         start_time = time.time()
         reduced_data = reduction_knn.apply_reduction(train_data, method)
