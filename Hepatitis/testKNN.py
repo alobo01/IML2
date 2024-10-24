@@ -38,9 +38,16 @@ def get_weighted_features(weighted_train_features, method, k):
 
 # Function to evaluate metrics
 def evaluate_model(model, X_test, y_test):
+    start_time = time.time()
+
     y_pred = model.predict(X_test)
+
+    elapsed_time = time.time() - start_time
+    performance = elapsed_time / len(y_test)
+
     model_metrics = {
         'accuracy': accuracy_score(y_test, y_pred),
+        'performance' : performance,
         'roc_auc': roc_auc_score(y_test, y_pred),
         'recall': recall_score(y_test, y_pred),
         'precision': precision_score(y_test, y_pred),
@@ -94,6 +101,7 @@ def main(dataset_path):
     results = {
         'method': [],
         'accuracy': [],
+        'performance': [],
         'roc_auc': [],
         'recall': [],
         'precision': [],
@@ -146,6 +154,7 @@ def main(dataset_path):
         # Calculate mean metrics over the folds
         mean_metrics = {
             'accuracy': np.mean([m['accuracy'] for m in model_metrics]),
+            'performance': np.mean([m['performance'] for m in model_metrics]),
             'roc_auc': np.mean([m['roc_auc'] for m in model_metrics]),
             'recall': np.mean([m['recall'] for m in model_metrics]),
             'precision': np.mean([m['precision'] for m in model_metrics]),
