@@ -34,6 +34,15 @@ The provided dataset focuses on characteristics relevant to hepatitis prognosis 
 
 ### Descriptive Statistics of the dataset
 
+# Class Distribution
+
+We can observe that the dataset is very unbalanced towards the LIVE class
+
+| Class   |   Count |
+|---------|---------|
+| LIVE    |     123 |
+| DIE     |      32 |
+
 **Numerical Columns**:
 
 AGE, BILIRUBIN, ALK_PHOSPHATE, SGOT, ALBUMIN, PROTIME
@@ -42,7 +51,7 @@ AGE, BILIRUBIN, ALK_PHOSPHATE, SGOT, ALBUMIN, PROTIME
 
 SEX, STEROID, ANTIVIRALS, FATIGUE, MALAISE, ANOREXIA, LIVER_BIG, LIVER_FIRM, SPLEEN_PALPABLE, SPIDERS, ASCITES, VARICES, HISTOLOGY, Class
 
-The dataset contains 155 samples, here is the pandas description of the numerical columns of dataset, and below are the missing values count:
+The dataset contains 155 samples, here is the pandas description of the numerical columns of the dataset, and below are the missing values count:
 
 |       |      AGE |   BILIRUBIN |   ALK_PHOSPHATE |     SGOT |    ALBUMIN |   PROTIME |
 |-------|----------|-------------|-----------------|----------|------------|-----------|
@@ -57,10 +66,53 @@ The dataset contains 155 samples, here is the pandas description of the numerica
 
 ### Missing Values Count
 
-| Features      | Missing Values Count |
-|---------------|----------------------|
-| BILIRUBIN     | 6                    |
-| ALK_PHOSPHATE | 29                   |
-| SGOT          | 4                    |
-| ALBUMIN       | 16                   |
-| PROTIME       | 67                   |
+There are a few columns with a good proportion of the data missing, to handle missing values, we 
+use the median value for numerical features and the mode for categorical features, since the data 
+is quite unbalanced, these values will be computer for each class separately.
+
+|                 |   Missing Values Count |
+|-----------------|------------------------|
+| STEROID         |                      1 |
+| FATIGUE         |                      1 |
+| MALAISE         |                      1 |
+| ANOREXIA        |                      1 |
+| SGOT            |                      4 |
+| SPIDERS         |                      5 |
+| ASCITES         |                      5 |
+| SPLEEN_PALPABLE |                      5 |
+| VARICES         |                      5 |
+| BILIRUBIN       |                      6 |
+| LIVER_BIG       |                     10 |
+| LIVER_FIRM      |                     11 |
+| ALBUMIN         |                     16 |
+| ALK_PHOSPHATE   |                     29 |
+| PROTIME         |                     67 |
+
+
+
+## Feature distribution by class
+
+We generate plots to analyse how the classes (LIVE and DIE) are distributed for all the features 
+in the dataset, each figure (saved in the plots_and_tables/feature_distributions folder) represents 
+the distribution normalized taking into account the class imbalance (left plot) and with the absolute
+values (right plot).
+
+Analyzing the figures we can see there are certain features that have a clear separation in the 
+classes, some examples are:
+
+### Sex distribution
+
+This plot shows that in this dataset all the patients that died were females
+
+![SEX_distribution.png](plots_and_tables/feature_distributions/SEX_distribution.png)
+
+
+### Albumin distribution
+
+This plot shows that all patients that died had an albumin value lower than 0.4
+
+![ALBUMIN_distribution.png](plots_and_tables/feature_distributions/ALBUMIN_distribution.png)
+
+
+## Preprocessing methods
+

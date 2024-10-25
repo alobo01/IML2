@@ -1,6 +1,6 @@
 import numpy as np
 import random
-from collections import defaultdict
+from collections import Counter
 
 from sklearn.neighbors import NearestNeighbors
 

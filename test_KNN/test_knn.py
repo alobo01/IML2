@@ -20,7 +20,7 @@ train_features = train_data_preprocessed.drop('Class', axis=1)
 train_labels = train_data_preprocessed['Class']
 
 # 2. Preprocess test data
-test_data_preprocessed = loaded_preprocessor.transform(DataPreprocessor.load_arff("hepatitis.fold.000000.test.arff")[0])
+test_data_preprocessed = loaded_preprocessor.transform(DataPreprocessor.load_arff("hepatitis.fold.000000.test.arff"))
 
 # Separate features and labels for the test data
 test_features = test_data_preprocessed.drop('Class', axis=1)

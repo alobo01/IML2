@@ -1,6 +1,6 @@
 import pandas as pd
 import json
-from scipy.io import arff
+from scipy.io.arff import loadarff
 from sklearn.impute import SimpleImputer, KNNImputer
 from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler, OneHotEncoder, OrdinalEncoder
 from sklearn.feature_selection import VarianceThreshold
@@ -13,25 +13,27 @@ import os
 
 class DataPreprocessor:
     @staticmethod
-    def load_arff(arff_filepath):
-        try:
-            data, meta = arff.loadarff(arff_filepath)
-            return pd.DataFrame(data), meta
-        except FileNotFoundError:
-            raise FileNotFoundError(f"The file {arff_filepath} was not found.")
-        except Exception as e:
-            raise Exception(f"Error loading ARFF file: {str(e)}")
+    def load_arff(file_path):
+        # Load the ARFF file
+        data, _ = loadarff(file_path)
+
+        # Create a DataFrame
+        df = pd.DataFrame(data)
+
+        # Decode binary strings to regular strings
+        for column in df.select_dtypes([object]).columns:
+            df[column] = df[column].apply(lambda x: x.decode('utf-8') if isinstance(x, bytes) else x)
+
+        return df
 
     def __init__(self, arff_filepath=None):
         self.preprocessor = None
         self.feature_names = None
         self.data = None
-        self.meta = None
 
         if arff_filepath:
             try:
-                self.data, self.meta = self.load_arff(arff_filepath)
-                self.data = pd.DataFrame(self.data)
+                self.data = self.load_arff(arff_filepath)
             except FileNotFoundError:
                 raise FileNotFoundError(f"The file {arff_filepath} was not found.")
             except Exception as e:
@@ -41,6 +43,19 @@ class DataPreprocessor:
         """Load configuration from a JSON file."""
         with open(config_path, 'r') as config_file:
             return json.load(config_file)
+
+    @staticmethod
+    def get_whole_dataset_as_df(self, test_fold_path, train_fold_path=None):
+        train_data = None
+        test_data = self.load_arff(test_fold_path)
+        if train_fold_path:
+            train_data = self.load_arff(train_fold_path)
+        elif self.data is not None:
+            train_data = self.data
+        else:
+            raise Exception("No train data")
+
+        return pd.concat([train_data, test_data], ignore_index=True)
 
     def fit(self, data: pd.DataFrame = None, config_path: str = None):
         """Fit the preprocessor on the given data."""
