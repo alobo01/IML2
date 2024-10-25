@@ -1,7 +1,12 @@
 from sklearn import svm
 
-X = [[0, 0], [1, 1]]
-y = [0, 1]
+# types of classifiers:
+# SVC, NuSVC (similar methods) - for multiclass (one vs one)
+#
+# and LinearSVC (faster but only for linear kernel) - for multiclass (one vs rest)
+
+X = [[0, 0], [1, 1]] # X=(n_samples,n_features)
+y = [0, 1] # label of each sample dim(y)=dim(X[0])
 clf = svm.SVC()
 clf.fit(X, y)
 
@@ -17,3 +22,6 @@ print(clf.support_)
 
 # get number of support vectors for each class
 print(clf.n_support_)
+
+# multiclass clasification
+# SVC and NuSVC "one vs one" approach
