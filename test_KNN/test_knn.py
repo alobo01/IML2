@@ -2,8 +2,8 @@ import multiprocessing
 import pandas as pd
 import time
 from sklearn.metrics import accuracy_score
-from Reader import DataPreprocessor
-from KNN import KNNAlgorithm, apply_weighting_method
+from classes.Reader import DataPreprocessor
+from classes.KNN import KNNAlgorithm, apply_weighting_method
 
 
 # # 0. Load from .arff and preprocess the training data, then save it to .joblib
@@ -50,8 +50,7 @@ def evaluate_knn(params):
 
     # Create the KNNAlgorithm object with the corresponding configuration
     knn = KNNAlgorithm(k=k, distance_metric=dist_metric, voting_policy=vote_policy, weighting_method=weighting_method)
-    algorithm_train_features = get_weighted_features(weighted_train_features, weighting_method, k)
-    knn.fit(algorithm_train_features, train_labels)
+    knn.fit(weighted_train_features, train_labels)
 
     # Make predictions on the test data
     predictions = knn.predict(test_features)
@@ -92,8 +91,10 @@ if __name__ == '__main__':
     print(f"Pre-processing time: {elapsed_preprocess_time:.2f} seconds\n")
 
     # 4. Prepare parameter sets for the pool
-    params_list = [(k, dist_metric, vote_policy, weighting_method, weighted_train_features, train_labels, test_features,
-                    test_labels)
+
+    params_list = [(k, dist_metric, vote_policy, weighting_method,
+                    get_weighted_features(weighted_train_features, weighting_method, k),
+                    train_labels, test_features, test_labels)
                    for k in [1, 3, 5, 7]
                    for dist_metric in distance_metrics
                    for vote_policy in voting_policies

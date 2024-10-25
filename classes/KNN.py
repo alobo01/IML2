@@ -1,8 +1,12 @@
-from typing import List, Union, Any
+import heapq
+from typing import List, Union, Any, Callable
+
+from pandas import Series
 from sklearn.feature_selection import mutual_info_classif
 from sklearn_relief import ReliefF
 import pandas as pd
 import numpy as np
+from functools import lru_cache
 
 class KNNAlgorithm:
     """
@@ -22,11 +26,12 @@ class KNNAlgorithm:
         """
         self.k = k
         self.distance_metric = distance_metric
+        self.distance = self.get_distance(distance_metric)
         self.weighting_method = weighting_method
         self.voting_policy = voting_policy
+        self.vote = self.get_vote(voting_policy)
         self.train_features = None
         self.train_labels = None
-        #self.distance_matrix = None
 
     def fit(self, train_features: pd.DataFrame, train_labels: pd.Series):
         """
@@ -35,20 +40,34 @@ class KNNAlgorithm:
         self.train_labels = train_labels
         self.train_features = train_features
 
-    def get_distance(self, vec1: pd.Series, vec2: pd.Series) -> float:
+    def get_distance(self, distance_metric: str) -> Callable[[pd.Series, pd.Series], float]:
         """
-        Compute the distance between two vectors based on the selected metric.
+        Choose the distance function based on the selected metric.
         """
-        if self.distance_metric == 'euclidean_distance':
-            return self.euclidean_distance(vec1, vec2)
-        elif self.distance_metric == 'manhattan_distance':
-            return self.manhattan_distance(vec1, vec2)
-        elif self.distance_metric == 'clark_distance':
-            return self.clark_distance(vec1, vec2)
+        if distance_metric == 'euclidean_distance':
+            return self.euclidean_distance
+        elif distance_metric == 'manhattan_distance':
+            return self.manhattan_distance
+        elif distance_metric == 'clark_distance':
+            return self.clark_distance
         else:
-            raise ValueError(f"Unsupported distance function: {self.distance_metric}")
+            raise ValueError(f"Unsupported distance function: {distance_metric}")
+
+    def get_vote(self, voting_policy: str) -> Callable[[Any, Any, pd.Series], int]:
+        """
+        Choose the vote function based on the selected policy.
+        """
+        if voting_policy == 'majority_class':
+            return self.majority_class_vote
+        elif voting_policy == 'inverse_distance_weighted':
+            return self.inverse_distance_weighted
+        elif voting_policy == 'shepard':
+            return self.shepard_vote
+        else:
+            raise ValueError(f"Unsupported voting policy: {voting_policy}")
 
     @staticmethod
+    #@lru_cache(maxsize=None)
     def euclidean_distance(vec1: pd.Series, vec2: pd.Series) -> float:
         """
         Euclidean distance metric.
@@ -56,6 +75,7 @@ class KNNAlgorithm:
         return np.sqrt(np.sum((vec1 - vec2) ** 2))
 
     @staticmethod
+    #@lru_cache(maxsize=None)
     def manhattan_distance(vec1: pd.Series, vec2: pd.Series) -> float:
         """
         Manhattan distance metric.
@@ -63,6 +83,7 @@ class KNNAlgorithm:
         return np.sum(np.abs(vec1 - vec2))
 
     @staticmethod
+    #@lru_cache(maxsize=None)
     def clark_distance(vec1: pd.Series, vec2: pd.Series) -> float:
         """
         Clark distance metric.
@@ -71,22 +92,33 @@ class KNNAlgorithm:
         denominator = vec1 + vec2
         squared_ratio = (numerator / denominator) ** 2
 
-        squared_ratio = squared_ratio.replace([np.inf, -np.inf], np.nan).dropna()
-
         return np.sqrt(squared_ratio.sum())
 
-    def get_neighbors(self, test_row: pd.Series) -> tuple[Any, Any]:
+    def get_neighbors(self, test_row: pd.Series, custom_k = None, return_distances = False) -> tuple[Any, Any]:
         """
         Identify the k nearest neighbors for a given test row.
         """
-        distances = [(index, self.get_distance(test_row, self.train_features.iloc[index])) for index in range(len(self.train_features))]
-        sorted_distances = sorted(distances, key=lambda x: x[1])
-        neighbors_idx = [index for index, _ in sorted_distances[:self.k]]
+        if not custom_k:
+            custom_k = self.k
+        distances = [(index, self.distance(test_row, self.train_features.iloc[index])) for index in range(len(self.train_features))]
+        #sorted_distances = sorted(distances, key=lambda x: x[1])
+        all_distances = heapq.nsmallest(custom_k, distances, key=lambda x: x[1])
+        if return_distances:
+            neighbors_idx, distances = [], []
+            for (idx,distance) in all_distances:
+                neighbors_idx.append(idx)
+                distances.append(distance)
+            neighbors_features = self.train_features.iloc[neighbors_idx]
+            neighbors_labels = self.train_labels.iloc[neighbors_idx]
+            return (neighbors_features, distances), neighbors_labels
 
-        neighbors_features = self.train_features.iloc[neighbors_idx]
-        neighbors_labels = self.train_labels.iloc[neighbors_idx]
+        else:
+            neighbors_idx = [index for index, _ in all_distances]
 
-        return neighbors_features, neighbors_labels
+            neighbors_features = self.train_features.iloc[neighbors_idx]
+            neighbors_labels = self.train_labels.iloc[neighbors_idx]
+
+            return neighbors_features, neighbors_labels
 
     def classify(self, test_row: pd.Series) -> Union[int, float]:
         """
@@ -94,26 +126,19 @@ class KNNAlgorithm:
         """
         neighbors_features, neighbors_labels = self.get_neighbors(test_row)
 
-        if self.voting_policy == 'majority_class':
-            return self.majority_class_vote(neighbors_labels)
-        elif self.voting_policy == 'inverse_distance_weighted':
-            return self.inverse_distance_weighted(neighbors_features, neighbors_labels, test_row)
-        elif self.voting_policy == 'shepard':
-            return self.shepard_vote(neighbors_features, neighbors_labels, test_row)
-        else:
-            raise ValueError(f"Unsupported voting policy: {self.voting_policy}")
+        return self.vote(neighbors_labels, neighbors_features, test_row)
 
-    def majority_class_vote(self, neighbors_labels) -> int:
+    def majority_class_vote(self, neighbors_labels, neighbors_features = None, test_row: pd.Series = None) -> int:
         """
         Majority class voting: Return the most common class among the neighbors.
         """
         return neighbors_labels.mode()[0]
 
-    def inverse_distance_weighted(self, neighbors_features, neighbors_labels, test_row: pd.Series) -> float:
+    def inverse_distance_weighted(self, neighbors_labels, neighbors_features, test_row: pd.Series) -> int:
         """
         Inverse distance weighting: Weight the class labels by the inverse of their distances.
         """
-        distances = [self.get_distance(test_row, row) for _, row in neighbors_features.iterrows()]
+        distances = [self.distance(test_row, row) for _, row in neighbors_features.iterrows()]
         weights = [1 / (d + 1e-5) for d in distances]
         class_vote = {}
 
@@ -126,11 +151,11 @@ class KNNAlgorithm:
         max_vote_label = max(class_vote, key=class_vote.get)
         return max_vote_label
 
-    def shepard_vote(self, neighbors_features, neighbors_labels, test_row: pd.Series) -> float:
+    def shepard_vote(self, neighbors_labels, neighbors_features, test_row: pd.Series) -> int:
         """
         Shepard's method: Use a power-based weighting.
         """
-        distances = [self.get_distance(test_row, row) for _, row in neighbors_features.iterrows()]
+        distances = [self.distance(test_row, row) for _, row in neighbors_features.iterrows()]
         weights = [np.exp(-d) for d in distances]
         class_vote = {}
 

@@ -5,9 +5,9 @@ import matplotlib.pyplot as plt
 from sklearn.datasets import make_moons, make_blobs
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.model_selection import train_test_split
-from KNN import KNNAlgorithm
+from classes.KNN import KNNAlgorithm
 import pandas as pd
-from ReductionKNN import ReductionKNN  # Assuming the previous code is in ReductionKNN.py
+from classes.ReductionKNN import ReductionKNN  # Assuming the previous code is in ReductionKNN.py
 
 
 def generate_dataset():
@@ -86,9 +86,10 @@ def main():
     fig.suptitle('Comparison of KNN Reduction Methods', fontsize=16)
 
     # Plot the original dataset
-
+    #methods = ['GCNN', 'RENN', 'IB2']
+    methods = ['EENTH']
     # Apply each reduction method and plot the results
-    for i, method in enumerate(['GCNN', 'RENN', 'IB2']):
+    for i, method in enumerate(methods):
         # Measure execution time for each reduction
         start_time = time.time()
         reduced_data = reduction_knn.apply_reduction(train_data, method)
