@@ -118,8 +118,8 @@ This plot shows that all patients that died had an albumin value lower than 0.4:
 
 ### For categorical features
 
-Since all categorical features only have two types, they are encoded with ones and zeros
+Since all categorical features only have two types, they are encoded with ones and zeros using LabelEncoder
 
 ### For numerical features
 
-Numerical features are normalized in the range 0 to 1 using the RobustScaler method
+Numerical features can be normalized using robustScaler or minMaxScaler
