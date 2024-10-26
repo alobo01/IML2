@@ -19,8 +19,8 @@ def load_fold_data(fold_number, dataset_path):
     test_file = os.path.join(dataset_path, f'hepatitis.fold.{fold_number:06d}.test.arff')
 
     loaded_preprocessor = DataPreprocessor().load("hepatitis_preprocessor.joblib")
-    train_data_preprocessed = loaded_preprocessor.transform(DataPreprocessor.load_arff(train_file)[0])
-    test_data_preprocessed = loaded_preprocessor.transform(DataPreprocessor.load_arff(test_file)[0])
+    train_data_preprocessed = loaded_preprocessor.transform(DataPreprocessor.load_arff(train_file))
+    test_data_preprocessed = loaded_preprocessor.transform(DataPreprocessor.load_arff(test_file))
 
     # Separate features and labels for train and test data
     train_features = train_data_preprocessed.drop('Class', axis=1)

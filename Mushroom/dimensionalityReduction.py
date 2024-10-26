@@ -4,6 +4,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import LabelEncoder, OneHotEncoder
+from sklearn.impute import SimpleImputer
 from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import accuracy_score
@@ -30,7 +31,7 @@ def load_and_preprocess_arff(filepath, class_column='Class'):
 
 
 # Step 2: Preprocess data by discretizing numeric features and label encoding categorical features
-def label_encode_features(features):
+def label_encode_features(features, discretize=False):
     """Make numeric features discrete with 20 bins and label encode string features."""
 
 
@@ -40,11 +41,16 @@ def label_encode_features(features):
     numeric_cols = features.select_dtypes(include=['number']).columns
     categorical_cols = features.select_dtypes(include=['object', 'category', 'string']).columns
 
-    # Discretize numeric columns into 20 bins
     for col in numeric_cols:
-        features[col] -= np.min(features[col])
-        features[col] /= np.max(features[col])
-        features[col] = pd.cut(features[col], bins=5, labels=False)
+        imp = SimpleImputer(missing_values=np.nan, strategy='mean')
+        features[col] = imp.fit_transform(features[col].values.reshape(-1,1))
+
+    if discretize:
+        # Discretize numeric columns into 20 bins
+        for col in numeric_cols:
+            features[col] -= np.min(features[col])
+            features[col] /= np.max(features[col])
+            features[col] = pd.cut(features[col], bins=5, labels=False)
 
     # Label encode categorical columns
     le = LabelEncoder()
@@ -173,21 +179,24 @@ def calculate_number_of_classes(df, features):
 
 
 # Step 7: Feature selection and model training
-def train_knn_with_top_features(df, features, features_labels, sorted_features, top_n=4):
+def train_knn_with_top_features(features, features_labels, sorted_features = None, top_n=4):
     """Train a KNN model using the top N features based on negative entropy."""
-    # Select the top N features
-    top_features = [feature for feature, _ in sorted_features[:top_n]]
-    print(f"Top {top_n} Features: {top_features}")
+    if sorted_features:
+        # Select the top N features
+        top_features = [feature for feature, _ in sorted_features[:top_n]]
+        print(f"Top {top_n} Features: {top_features}")
 
-    # Extract the top N features
-    selected_features = features[top_features]
+        # Extract the top N features
+        selected_features = features[top_features]
 
-    # Apply OneHotEncoder to the selected features
-    encoder = OneHotEncoder()
-    encoded_features = encoder.fit_transform(selected_features)
+        # Apply OneHotEncoder to the selected features
+        encoder = OneHotEncoder()
+        processed_features = encoder.fit_transform(selected_features)
+    else:
+        processed_features = features
 
     # Split the dataset into training and test sets
-    X_train, X_test, y_train, y_test = train_test_split(encoded_features, features_labels, test_size=0.3,
+    X_train, X_test, y_train, y_test = train_test_split(processed_features, features_labels, test_size=0.3,
                                                         random_state=42)
 
     # Train the KNN model
@@ -215,7 +224,7 @@ if __name__ == "__main__":
     kl_divergence_results = compute_kl_divergence_by_feature(df, features, verbose=True)
 
     # Plot histograms for feature distributions by class
-    plot_feature_distributions_by_class(df, features)
+    #plot_feature_distributions_by_class(df, features)
 
     # Summarize and sort features by total negative entropy
     sorted_features = summarize_and_sort_entropy(kl_divergence_results)
@@ -227,4 +236,5 @@ if __name__ == "__main__":
         print(f"Feature: {feature}, Number of unique classes: {num_class}")
 
     # Train a KNN model using the top 4 features
-    train_knn_with_top_features(df, features, features_labels, sorted_features)
+    train_knn_with_top_features(features, features_labels, sorted_features)
+    train_knn_with_top_features(features, features_labels)
