@@ -1,7 +1,7 @@
 from sklearn.svm import SVC
 from sklearn.model_selection import cross_val_score
 from sklearn.metrics import accuracy_score, classification_report
-from sklearn.multiclass import OneVsRestClassifier
+from sklearn.multiclass import OneVsRestClassifier, OneVsOneClassifier
 import pandas as pd
 
 
@@ -18,22 +18,66 @@ class SVM():
     """
 
     def __init__(self, train_data: pd.DataFrame, train_labels: pd.Series, kernel: str = 'rbf', C: float = 1.0,
-                 gamma: str = 'scale'):
+                 gamma: str = 'scale', multiclass: str ='ovo'):
         self.train_data = train_data
         self.train_labels = train_labels
         self.kernel = kernel
         self.C = C
         self.gamma = gamma
         self.model = None
+        self.multiclass = multiclass
 
     def train(self):
         """
         Train the SVM model using the One-vs-Rest strategy for multiclass classification.
         """
-        base_svc = SVC(kernel=self.kernel, C=self.C, gamma=self.gamma)
-        self.model = OneVsRestClassifier(base_svc)
+        self.model = SVC(kernel=self.kernel, C=self.C, gamma=self.gamma, decision_function_shape=self.multiclass)
         self.model.fit(self.train_data, self.train_labels)
-        print(f"Model trained with kernel='{self.kernel}', C={self.C}, gamma='{self.gamma}'")
+        if self.kernel == 'linear':
+            print(f"Model trained with kernel='{self.kernel}', C={self.C}")
+        else:
+            print(f"Model trained with kernel='{self.kernel}', C={self.C}, gamma='{self.gamma}'")
+
+
+    @property
+    def support_vectors_(self):
+        """
+        Get the support vectors from the trained model.
+        Returns:
+            numpy.ndarray: Array of support vectors
+        """
+        if self.model is None:
+            raise ValueError("Model needs to be trained before accessing support vectors")
+        return self.model.support_vectors_
+
+    @property
+    def estimators_(self):
+
+        if self.model is None:
+            raise ValueError("Model needs to be trained before accessing estimators_")
+        return self.model.estimators_
+
+    @property
+    def n_support_(self):
+        """
+        Get the number of support vectors for each class.
+        Returns:
+            numpy.ndarray: Array with number of support vectors for each class
+        """
+        if self.model is None:
+            raise ValueError("Model needs to be trained before accessing n_support")
+        return self.model.n_support_
+
+    @property
+    def dual_coef_(self):
+        """
+        Get the dual coefficients.
+        Returns:
+            numpy.ndarray: Array of dual coefficients
+        """
+        if self.model is None:
+            raise ValueError("Model needs to be trained before accessing dual coefficients")
+        return self.model.dual_coef_
 
     def predict(self, data: pd.DataFrame):
         """
@@ -67,6 +111,8 @@ class SVM():
 
         print(f"Test Accuracy: {test_accuracy:.4f}")
         print(f"Classification Report:\n{report}")
+        print(f"Number of support vectors per class: {self.n_support_}")
+        print(f"Total number of support vectors: {len(self.support_vectors_)}")
 
         return test_accuracy, report
 

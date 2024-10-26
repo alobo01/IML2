@@ -1,6 +1,6 @@
 # Import necessary libraries
 import pandas as pd
-from SVM import SVM
+from classes.SVM import SVM
 from sklearn.model_selection import train_test_split
 import numpy as np
 import matplotlib.pyplot as plt
@@ -17,7 +17,7 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_
 
 # Create an instance of the SVM class with the training data
 def_kernel='linear'
-svm_classifier = SVM(train_data=X_train, train_labels=y_train, kernel=def_kernel, C=1.0, gamma='scale')
+svm_classifier = SVM(train_data=X_train, train_labels=y_train, kernel=def_kernel, C=1.0,multiclass='ovr')
 
 # Train the SVM model using One-vs-Rest (OvR)
 svm_classifier.train()
