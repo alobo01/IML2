@@ -30,7 +30,8 @@ def save_dataframe_description_analysis(df, folder_name="plots_and_tables"):
     numerical_columns = df.select_dtypes(include=['number']).columns.tolist()
     categorical_columns = df.select_dtypes(exclude=['number']).columns.tolist()
     numerical_columns_md = ", ".join(numerical_columns) if numerical_columns else "No numerical columns found."
-    categorical_columns_md = ", ".join(categorical_columns) if categorical_columns else "No categorical columns found."
+    categorical_columns_md = ", ".join(
+        map(str, categorical_columns)) if categorical_columns else "No categorical columns found."
 
     # Identify the class column (assumed to be 'Class' if present, otherwise last column)
     class_column = 'Class' if 'Class' in df.columns else df.columns[-1]
@@ -206,11 +207,14 @@ def save_feature_distributions_by_class(df, folder_name="plots_and_tables"):
     print(f"Class distribution information saved in '{plots_folder}/class_distribution.txt'")
 
 
-reader = DataPreprocessor("../datasets/hepatitis/hepatitis.fold.000000.train.arff")
-complete_df = reader.get_whole_dataset_as_df(
-    reader,
-    "../datasets/hepatitis/hepatitis.fold.000000.test.arff"
+complete_df = DataPreprocessor.get_whole_dataset_as_df(
+    "../datasets/hepatitis/hepatitis.fold.000000.test.arff",
+    "../datasets/hepatitis/hepatitis.fold.000000.train.arff"
 )
+
+# test preprocessor
+reader = DataPreprocessor(complete_df)
+preprocessed_df = reader.fit_transform(cat_encoding="label", num_scaler="minmax")
 
 save_dataframe_description_analysis(complete_df)
 save_feature_distributions_by_class(complete_df)

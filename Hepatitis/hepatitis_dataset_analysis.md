@@ -102,17 +102,24 @@ classes, some examples are:
 
 ### Sex distribution
 
-This plot shows that in this dataset all the patients that died were females
+This plot shows that in this dataset all the patients that died were females:
 
 ![SEX_distribution.png](plots_and_tables/feature_distributions/SEX_distribution.png)
 
 
 ### Albumin distribution
 
-This plot shows that all patients that died had an albumin value lower than 0.4
+This plot shows that all patients that died had an albumin value lower than 0.4:
 
 ![ALBUMIN_distribution.png](plots_and_tables/feature_distributions/ALBUMIN_distribution.png)
 
 
 ## Preprocessing methods
 
+### For categorical features
+
+Since all categorical features only have two types, they are encoded with ones and zeros
+
+### For numerical features
+
+Numerical features are normalized in the range 0 to 1 using the RobustScaler method
