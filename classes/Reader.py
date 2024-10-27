@@ -17,6 +17,8 @@ class DataPreprocessor:
         df = pd.DataFrame(data)
         for column in df.select_dtypes([object]).columns:
             df[column] = df[column].apply(lambda x: x.decode('utf-8') if isinstance(x, bytes) else x)
+        # Remove ? values
+        df.replace("?", np.nan)
         return df
 
     def __init__(self, arff_filepath=None):
@@ -56,7 +58,6 @@ class DataPreprocessor:
                 raise ValueError("No data provided. Either pass data to fit() or load an ARFF file.")
             data = self.data
 
-        self.data = data = data.replace("?", np.nan)
         self.categorical_cols = list(data.select_dtypes(include=['object']).columns)
         self.numeric_cols = list(data.select_dtypes(include=['number']).columns)
 
@@ -127,9 +128,6 @@ class DataPreprocessor:
             raise ValueError("Preprocessor not fitted. Call fit() first.")
         if data is None:
             data = self.data
-        else:
-            # Replace '?' with NaN before transformation
-            data = data.replace('?', np.nan)
 
         transformed_data = self.preprocessor.transform(data)
         return pd.DataFrame(transformed_data, columns=self.feature_names_)
