@@ -1,6 +1,6 @@
 # Import necessary libraries
 import pandas as pd
-from SVM import SVM
+from classes.SVM import SVM
 from sklearn.model_selection import train_test_split
 import numpy as np
 import matplotlib.pyplot as plt
@@ -16,8 +16,8 @@ y = df.iloc[:, -1]  # The last column is the label (the class)
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
 # Create an instance of the SVM class with the training data
-def_kernel='linear'
-svm_classifier = SVM(train_data=X_train, train_labels=y_train, kernel=def_kernel, C=1.0, gamma='scale')
+def_kernel='rbf'
+svm_classifier = SVM(train_data=X_train, train_labels=y_train, kernel=def_kernel, C=1.0,multiclass='ovr')
 
 # Train the SVM model using One-vs-Rest (OvR)
 svm_classifier.train()
@@ -33,36 +33,70 @@ predictions = svm_classifier.predict(X_test)
 
 print(predictions)
 
-# Now plot the K groups of points and the K hyperplanes
 
-# Create a scatter plot of the training data, coloring by label
-plt.scatter(X_train.iloc[:, 0], X_train.iloc[:, 1], c=y_train, cmap='coolwarm', s=30, edgecolors='k', label='Train')
-plt.scatter(X_test.iloc[:, 0], X_test.iloc[:, 1], c=y_test, cmap='coolwarm', marker='x', s=30, label='Test')
+# Create a visualization of the data and decision boundaries
+def plot_decision_boundary_and_data(X, y, model, title="SVM Decision Boundary"):
+    # Create a mesh grid to plot decision boundary
+    x_min, x_max = X.iloc[:, 0].min() - 1, X.iloc[:, 0].max() + 1
+    y_min, y_max = X.iloc[:, 1].min() - 1, X.iloc[:, 1].max() + 1
+    xx, yy = np.meshgrid(np.arange(x_min-10, x_max+10, 0.1),
+                         np.arange(y_min-10, y_max+10, 0.1))
 
-# Plot the K separating hyperplanes, one for each class (since it's OvR, we have K hyperplanes)
-for i, classifier in enumerate(svm_classifier.model.estimators_):
-    w = classifier.coef_[0]  # Get the coefficients for the i-th hyperplane
-    a = -w[0] / w[1]
+    # Make predictions for each point in the mesh
+    Z = model.predict(pd.DataFrame(np.c_[xx.ravel(), yy.ravel()], columns=['x', 'y']))
+    Z = np.array(Z).reshape(xx.shape)
 
-    # Create the decision boundary line
-    xx = np.linspace(min(X.iloc[:, 0]), max(X.iloc[:, 0]))
-    yy = a * xx - (classifier.intercept_[0]) / w[1]
+    # Create the plot
+    plt.figure(figsize=(6, 6))
 
-    # Plot the separating hyperplane
-    plt.plot(xx, yy, label=f'Class {i} vs Rest Hyperplane')
+    # Plot decision boundary
+    plt.contourf(xx, yy, Z, alpha=0.4, cmap='coolwarm')
 
-    # Margins
-    margin = 1 / np.sqrt(np.sum(w ** 2))
-    yy_down = yy - np.sqrt(1 + a ** 2) * margin
-    yy_up = yy + np.sqrt(1 + a ** 2) * margin
+    # Plot data points
+    scatter = plt.scatter(X.iloc[:, 0], X.iloc[:, 1], c=y, cmap='coolwarm',
+                          edgecolors='black', linewidth=1, alpha=0.8)
+    # Add legend
+    legend1 = plt.legend(*scatter.legend_elements(),
+                         title="Classes", loc='lower left', bbox_to_anchor=(0.0, 0.05))
 
-    # Plot the margins
-    plt.plot(xx, yy_down, 'k--')
-    plt.plot(xx, yy_up, 'k--')
+    # Set the facecolor of the legend to white
+    legend1.get_frame().set_facecolor('white')
 
-# Labels, legends, and title
-plt.xlabel('X1')
-plt.ylabel('X2')
-plt.title(f'SVM {def_kernel} kernel hyperplanes for multiple classification')
-plt.legend()
+    # Optionally, set the edge color of the legend to black (or any color you want)
+    legend1.get_frame().set_edgecolor('black')
+
+    # Add the legend to the axes
+    plt.gca().add_artist(legend1)
+
+    plt.title(title)
+    plt.xlabel('X coordinate')
+    plt.ylabel('Y coordinate')
+
+    # Add support vectors if available
+    if hasattr(model, 'support_vectors_'):
+        plt.scatter(model.support_vectors_[:, 0], model.support_vectors_[:, 1],
+                    s=100, linewidth=1, facecolors='none', edgecolors='k',
+                    label='Support Vectors')
+        legend2=plt.legend(loc='lower left', bbox_to_anchor=(0.0, 0.01))
+        # Add legend
+
+        # Set the facecolor of the legend to white
+        legend2.get_frame().set_facecolor('white')
+
+        # Optionally, set the edge color of the legend to black (or any color you want)
+        legend2.get_frame().set_edgecolor('black')
+
+        # Add the legend to the axes
+        plt.gca().add_artist(legend2)
+
+    plt.tight_layout()
+    return plt
+
+
+# Plot the data and decision boundaries
+plt = plot_decision_boundary_and_data(X, y, svm_classifier,
+                                      title=f"SVM Decision Boundaries ({def_kernel} kernel)")
+
+plt.savefig('RBF_kernel_example.png')
 plt.show()
+
