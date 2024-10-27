@@ -205,16 +205,3 @@ def save_feature_distributions_by_class(df, folder_name="plots_and_tables"):
 
     print(f"Feature distribution plots saved in '{plots_folder}'")
     print(f"Class distribution information saved in '{plots_folder}/class_distribution.txt'")
-
-
-complete_df = DataPreprocessor.get_whole_dataset_as_df(
-    "../datasets/hepatitis/hepatitis.fold.000000.test.arff",
-    "../datasets/hepatitis/hepatitis.fold.000000.train.arff"
-)
-
-# test preprocessor
-reader = DataPreprocessor(complete_df)
-preprocessed_df = reader.fit_transform(cat_encoding="label", num_scaler="minmax")
-
-save_dataframe_description_analysis(complete_df)
-save_feature_distributions_by_class(complete_df)

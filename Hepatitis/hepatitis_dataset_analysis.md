@@ -51,7 +51,8 @@ AGE, BILIRUBIN, ALK_PHOSPHATE, SGOT, ALBUMIN, PROTIME
 
 SEX, STEROID, ANTIVIRALS, FATIGUE, MALAISE, ANOREXIA, LIVER_BIG, LIVER_FIRM, SPLEEN_PALPABLE, SPIDERS, ASCITES, VARICES, HISTOLOGY, Class
 
-The dataset contains 155 samples, here is the pandas description of the numerical columns of the dataset, and below are the missing values count:
+The dataset contains 155 samples, here is the pandas description of the numerical columns of the dataset, 
+and below are the missing values count:
 
 |       |      AGE |   BILIRUBIN |   ALK_PHOSPHATE |     SGOT |    ALBUMIN |   PROTIME |
 |-------|----------|-------------|-----------------|----------|------------|-----------|
@@ -66,9 +67,10 @@ The dataset contains 155 samples, here is the pandas description of the numerica
 
 ### Missing Values Count
 
-There are a few columns with a good proportion of the data missing, to handle missing values, we 
-use the median value for numerical features and the mode for categorical features, since the data 
-is quite unbalanced, these values will be computer for each class separately.
+There are a few features with a good proportion of the data missing, in the case of the protime
+feature, almost half of the values are missing, in this case it is better to remove the feature,
+for the rest of features, we have used the median value for numerical features and the mode 
+for categorical features
 
 |                 |   Missing Values Count |
 |-----------------|------------------------|
