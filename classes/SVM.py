@@ -1,24 +1,27 @@
 from sklearn.svm import SVC
 from sklearn.model_selection import cross_val_score
-from sklearn.metrics import accuracy_score, classification_report
-from sklearn.multiclass import OneVsRestClassifier, OneVsOneClassifier
 import pandas as pd
+import time
+import numpy as np
+from sklearn.metrics import accuracy_score, roc_auc_score, recall_score, precision_score, f1_score, confusion_matrix
 
 
 class SVM():
     """
-    SVM Classifier Class with One-vs-Rest for multiclass problems.
+    SVM Classifier Class for multiclass problems.
 
     Attributes:
         - train_data: DataFrame of training features.
         - train_labels: Series of training labels.
-        - kernel: Kernel type to be used in the SVM ('linear', 'rbf', etc.)
+        - kernel: Kernel type to be used in the SVM ('linear', 'rbf', 'poly' or 'sigmoid')
         - C: Regularization parameter for the SVM.
         - gamma: Kernel coefficient for ‘rbf’, ‘poly’ and ‘sigmoid’.
+        - multiclass: method used for multiclass classification, One-Vs-One: 'ovo' or One-Vs-Rest: 'ovr'
+        - degree: degree when the polynomial kernel is used
     """
 
     def __init__(self, train_data: pd.DataFrame, train_labels: pd.Series, kernel: str = 'rbf', C: float = 1.0,
-                 gamma: str = 'scale', multiclass: str ='ovo'):
+                 gamma: str = 'scale', multiclass: str ='ovo', degree: int = 2):
         self.train_data = train_data
         self.train_labels = train_labels
         self.kernel = kernel
@@ -26,58 +29,15 @@ class SVM():
         self.gamma = gamma
         self.model = None
         self.multiclass = multiclass
+        self.degree= degree
 
     def train(self):
         """
-        Train the SVM model using the One-vs-Rest strategy for multiclass classification.
+        Train the SVM model using the One-vs-Rest/One-vs-One strategy for multiclass classification.
         """
-        self.model = SVC(kernel=self.kernel, C=self.C, gamma=self.gamma, decision_function_shape=self.multiclass)
+        self.model = SVC(kernel=self.kernel, C=self.C, gamma=self.gamma, decision_function_shape=self.multiclass,
+                         degree=self.degree)
         self.model.fit(self.train_data, self.train_labels)
-        if self.kernel == 'linear':
-            print(f"Model trained with kernel='{self.kernel}', C={self.C}")
-        else:
-            print(f"Model trained with kernel='{self.kernel}', C={self.C}, gamma='{self.gamma}'")
-
-
-    @property
-    def support_vectors_(self):
-        """
-        Get the support vectors from the trained model.
-        Returns:
-            numpy.ndarray: Array of support vectors
-        """
-        if self.model is None:
-            raise ValueError("Model needs to be trained before accessing support vectors")
-        return self.model.support_vectors_
-
-    @property
-    def estimators_(self):
-
-        if self.model is None:
-            raise ValueError("Model needs to be trained before accessing estimators_")
-        return self.model.estimators_
-
-    @property
-    def n_support_(self):
-        """
-        Get the number of support vectors for each class.
-        Returns:
-            numpy.ndarray: Array with number of support vectors for each class
-        """
-        if self.model is None:
-            raise ValueError("Model needs to be trained before accessing n_support")
-        return self.model.n_support_
-
-    @property
-    def dual_coef_(self):
-        """
-        Get the dual coefficients.
-        Returns:
-            numpy.ndarray: Array of dual coefficients
-        """
-        if self.model is None:
-            raise ValueError("Model needs to be trained before accessing dual coefficients")
-        return self.model.dual_coef_
 
     def predict(self, data: pd.DataFrame):
         """
@@ -88,6 +48,7 @@ class SVM():
         if self.model is None:
             raise ValueError("The model needs to be trained before making predictions.")
         return self.model.predict(data)
+
 
     def evaluate(self, test_data: pd.DataFrame, test_labels: pd.Series):
         """
@@ -102,33 +63,16 @@ class SVM():
         if self.model is None:
             raise ValueError("The model needs to be trained before evaluation.")
 
-        predictions = self.predict(test_data)
-        test_accuracy = accuracy_score(test_labels, predictions)
-        # Automatically generate class labels
-        unique_labels = sorted(self.train_labels.unique())
-        class_names = [f'Class {i}' for i in unique_labels]
-        report = classification_report(test_labels, predictions, target_names=class_names)
+        start_time = time.time()
+        y_pred = self.model.predict(test_data)
+        elapsed_time = time.time() - start_time
+        performance = elapsed_time / len(test_labels)
+        model_metrics = [accuracy_score(test_labels, y_pred),performance,roc_auc_score(test_labels, y_pred),
+                         recall_score(test_labels, y_pred), precision_score(test_labels, y_pred), f1_score(test_labels,
+                                                                                                           y_pred),
+                         confusion_matrix(test_labels, y_pred)]
 
-        print(f"Test Accuracy: {test_accuracy:.4f}")
-        print(f"Classification Report:\n{report}")
-        print(f"Number of support vectors per class: {self.n_support_}")
-        print(f"Total number of support vectors: {len(self.support_vectors_)}")
-
-        return test_accuracy, report
-
-    def cross_validate(self, cv: int = 5):
-        """
-        Perform cross-validation on the training data using One-vs-Rest strategy.
-        Args:
-        - cv: Number of folds for cross-validation.
-        Returns cross-validation accuracy.
-        """
-        if self.model is None:
-            raise ValueError("The model needs to be trained before cross-validation.")
-
-        cv_scores = cross_val_score(self.model, self.train_data, self.train_labels, cv=cv)
-        print(f"Cross-Validation Accuracy: {cv_scores.mean():.4f} ± {cv_scores.std():.4f}")
-        return cv_scores
+        return model_metrics
 
     def set_params(self, kernel=None, C=None, gamma=None):
         """
@@ -140,4 +84,4 @@ class SVM():
             self.C = C
         if gamma:
             self.gamma = gamma
-        print(f"Model parameters updated: kernel='{self.kernel}', C={self.C}, gamma='{self.gamma}'")
+

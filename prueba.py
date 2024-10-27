@@ -16,7 +16,7 @@ y = df.iloc[:, -1]  # The last column is the label (the class)
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
 # Create an instance of the SVM class with the training data
-def_kernel='linear'
+def_kernel='rbf'
 svm_classifier = SVM(train_data=X_train, train_labels=y_train, kernel=def_kernel, C=1.0,multiclass='ovr')
 
 # Train the SVM model using One-vs-Rest (OvR)
@@ -47,7 +47,7 @@ def plot_decision_boundary_and_data(X, y, model, title="SVM Decision Boundary"):
     Z = np.array(Z).reshape(xx.shape)
 
     # Create the plot
-    plt.figure(figsize=(12, 8))
+    plt.figure(figsize=(6, 6))
 
     # Plot decision boundary
     plt.contourf(xx, yy, Z, alpha=0.4, cmap='coolwarm')
@@ -95,6 +95,8 @@ def plot_decision_boundary_and_data(X, y, model, title="SVM Decision Boundary"):
 
 # Plot the data and decision boundaries
 plt = plot_decision_boundary_and_data(X, y, svm_classifier,
-                                      title="SVM Decision Boundaries (Linear Kernel)")
+                                      title=f"SVM Decision Boundaries ({def_kernel} kernel)")
+
+plt.savefig('RBF_kernel_example.png')
 plt.show()
 
