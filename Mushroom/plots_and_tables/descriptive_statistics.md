@@ -9,9 +9,7 @@
 
 # Missing Values Analysis
 
-|            |   Missing Values Count |
-|------------|------------------------|
-| stalk-root |                   2480 |
+No missing values found.
 
 # Column Types
 
