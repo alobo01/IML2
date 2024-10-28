@@ -57,7 +57,7 @@ def total_analysis(def_kernel, C_value):
         x_train, y_train, x_test, y_test = load_fold_data(n,'..\\datasets\\hepatitis')
 
         # Create an instance of the SVM class with the training data
-        svm_classifier = SVM(train_data=x_train, train_labels=y_train, kernel=def_kernel, C=C_value, gamma='auto',multiclass='ovr')
+        svm_classifier = SVM(train_data=x_train, train_labels=y_train, kernel=def_kernel, C=C_value, gamma='auto')
 
          # Train the SVM model
         svm_classifier.train()

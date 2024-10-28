@@ -16,14 +16,14 @@ y = df.iloc[:, -1]  # The last column is the label (the class)
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
 # Create an instance of the SVM class with the training data
-def_kernel='rbf'
-svm_classifier = SVM(train_data=X_train, train_labels=y_train, kernel=def_kernel, C=1.0, multiclass='ovr')
+def_kernel='linear'
+svm_classifier = SVM(train_data=X_train, train_labels=y_train, kernel=def_kernel, C=1.0)
 
 # Train the SVM model using One-vs-Rest (OvR)
 svm_classifier.train()
 
 # Evaluate the model on the test set
-# print(svm_classifier.evaluate(X_test,y_test))
+print(svm_classifier.evaluate(X_test,y_test))
 
 # Create a visualization of the data and decision boundaries
 def plot_decision_boundary_and_data(X, y, model, title="SVM Decision Boundary"):
@@ -62,32 +62,13 @@ def plot_decision_boundary_and_data(X, y, model, title="SVM Decision Boundary"):
     plt.title(title)
     plt.xlabel('X coordinate')
     plt.ylabel('Y coordinate')
-
-    # Add support vectors if available
-    if hasattr(model, 'support_vectors_'):
-        plt.scatter(model.support_vectors_[:, 0], model.support_vectors_[:, 1],
-                    s=100, linewidth=1, facecolors='none', edgecolors='k',
-                    label='Support Vectors')
-        legend2=plt.legend(loc='lower left', bbox_to_anchor=(0.0, 0.01))
-        # Add legend
-
-        # Set the facecolor of the legend to white
-        legend2.get_frame().set_facecolor('white')
-
-        # Optionally, set the edge color of the legend to black (or any color you want)
-        legend2.get_frame().set_edgecolor('black')
-
-        # Add the legend to the axes
-        plt.gca().add_artist(legend2)
-
     plt.tight_layout()
     return plt
 
 
 # Plot the data and decision boundaries
-plt = plot_decision_boundary_and_data(X, y, svm_classifier,
-                                      title=f"SVM Decision Boundaries ({def_kernel} kernel)")
+plt = plot_decision_boundary_and_data(X, y, svm_classifier, title=f"SVM Decision Boundaries ({def_kernel} kernel)")
 
-plt.savefig('RBF_kernel_example.png')
+plt.savefig('Linear_kernel_example.png')
 plt.show()
 

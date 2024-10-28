@@ -9,7 +9,7 @@ from sklearn.preprocessing import label_binarize
 
 class SVM():
     """
-    SVM Classifier Class for multiclass problems.
+    SVM Classifier Class for two-class problems.
 
     Attributes:
         - train_data: DataFrame of training features.
@@ -17,28 +17,24 @@ class SVM():
         - kernel: Kernel type to be used in the SVM ('linear', 'rbf', 'poly' or 'sigmoid')
         - C: Regularization parameter for the SVM.
         - gamma: Kernel coefficient for ‘rbf’, ‘poly’ and ‘sigmoid’.
-        - multiclass: method used for multiclass classification, One-Vs-One: 'ovo' or One-Vs-Rest: 'ovr'
         - degree: degree when the polynomial kernel is used
     """
 
     def __init__(self, train_data: pd.DataFrame, train_labels: pd.Series, kernel: str = 'rbf', C: float = 1.0,
-                 gamma: str = 'scale', multiclass: str ='ovo', degree: int = 2):
+                 gamma: str = 'scale', degree: int = 2):
         self.train_data = train_data
         self.train_labels = train_labels
         self.kernel = kernel
         self.C = C
         self.gamma = gamma
         self.model = None
-        self.multiclass = multiclass
         self.degree= degree
-        self.classes_ = np.unique(train_labels)
 
     def train(self):
         """
         Train the SVM model using the One-vs-Rest/One-vs-One strategy for multiclass classification.
         """
-        self.model = SVC(kernel=self.kernel, C=self.C, gamma=self.gamma, decision_function_shape=self.multiclass,
-                         degree=self.degree)
+        self.model = SVC(kernel=self.kernel, C=self.C, gamma=self.gamma, degree=self.degree)
         self.model.fit(self.train_data, self.train_labels)
 
     def predict(self, data: pd.DataFrame):
@@ -69,11 +65,9 @@ class SVM():
         y_pred = self.model.predict(test_data)
         elapsed_time = time.time() - start_time
         performance = elapsed_time / len(test_labels)
-        model_metrics = [accuracy_score(test_labels, y_pred),performance,roc_auc_score(test_labels, y_pred,
-                                                                                       multi_class=self.multiclass),
-                         recall_score(test_labels, y_pred), precision_score(test_labels, y_pred), f1_score(test_labels,
-                                                                                                           y_pred),
-                         confusion_matrix(test_labels, y_pred)]
+        model_metrics = [accuracy_score(test_labels, y_pred),performance,roc_auc_score(test_labels, y_pred),
+                         recall_score(test_labels, y_pred), precision_score(test_labels, y_pred),
+                         f1_score(test_labels,y_pred), confusion_matrix(test_labels, y_pred)]
 
         return model_metrics
 
