@@ -17,22 +17,13 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_
 
 # Create an instance of the SVM class with the training data
 def_kernel='rbf'
-svm_classifier = SVM(train_data=X_train, train_labels=y_train, kernel=def_kernel, C=1.0,multiclass='ovr')
+svm_classifier = SVM(train_data=X_train, train_labels=y_train, kernel=def_kernel, C=1.0, multiclass='ovr')
 
 # Train the SVM model using One-vs-Rest (OvR)
 svm_classifier.train()
 
 # Evaluate the model on the test set
-svm_classifier.evaluate(test_data=X_test, test_labels=y_test)
-
-# Optional: Perform cross-validation
-svm_classifier.cross_validate(cv=5)
-
-# Make predictions on new data (use X_test for demonstration)
-predictions = svm_classifier.predict(X_test)
-
-print(predictions)
-
+# svm_classifier.evaluate(X_test,y_test)
 
 # Create a visualization of the data and decision boundaries
 def plot_decision_boundary_and_data(X, y, model, title="SVM Decision Boundary"):

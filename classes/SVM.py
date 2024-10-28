@@ -67,7 +67,8 @@ class SVM():
         y_pred = self.model.predict(test_data)
         elapsed_time = time.time() - start_time
         performance = elapsed_time / len(test_labels)
-        model_metrics = [accuracy_score(test_labels, y_pred),performance,roc_auc_score(test_labels, y_pred),
+        model_metrics = [accuracy_score(test_labels, y_pred),performance,roc_auc_score(test_labels, y_pred,
+                                                                                       multi_class=self.multiclass),
                          recall_score(test_labels, y_pred), precision_score(test_labels, y_pred), f1_score(test_labels,
                                                                                                            y_pred),
                          confusion_matrix(test_labels, y_pred)]
