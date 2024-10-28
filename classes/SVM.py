@@ -4,6 +4,7 @@ import pandas as pd
 import time
 import numpy as np
 from sklearn.metrics import accuracy_score, roc_auc_score, recall_score, precision_score, f1_score, confusion_matrix
+from sklearn.preprocessing import label_binarize
 
 
 class SVM():
@@ -30,6 +31,7 @@ class SVM():
         self.model = None
         self.multiclass = multiclass
         self.degree= degree
+        self.classes_ = np.unique(train_labels)
 
     def train(self):
         """
@@ -74,6 +76,7 @@ class SVM():
                          confusion_matrix(test_labels, y_pred)]
 
         return model_metrics
+
 
     def set_params(self, kernel=None, C=None, gamma=None):
         """

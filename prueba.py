@@ -23,7 +23,7 @@ svm_classifier = SVM(train_data=X_train, train_labels=y_train, kernel=def_kernel
 svm_classifier.train()
 
 # Evaluate the model on the test set
-# svm_classifier.evaluate(X_test,y_test)
+# print(svm_classifier.evaluate(X_test,y_test))
 
 # Create a visualization of the data and decision boundaries
 def plot_decision_boundary_and_data(X, y, model, title="SVM Decision Boundary"):
