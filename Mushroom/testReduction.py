@@ -15,18 +15,18 @@ from classes.KNN import KNNAlgorithm
 
 # Function to load data from ARFF files for a fold
 def load_fold_data(fold_number, dataset_path):
-    train_file = os.path.join(dataset_path, f'hepatitis.fold.{fold_number:06d}.train.arff')
-    test_file = os.path.join(dataset_path, f'hepatitis.fold.{fold_number:06d}.test.arff')
+    train_file = os.path.join(dataset_path, f'mushroom.fold.{fold_number:06d}.train.arff')
+    test_file = os.path.join(dataset_path, f'mushroom.fold.{fold_number:06d}.test.arff')
 
-    loaded_preprocessor = DataPreprocessor().load("hepatitis_preprocessor.joblib")
+    loaded_preprocessor = DataPreprocessor().load("mushroom_preprocessor.joblib")
     train_data_preprocessed = loaded_preprocessor.transform(DataPreprocessor.load_arff(train_file))
     test_data_preprocessed = loaded_preprocessor.transform(DataPreprocessor.load_arff(test_file))
 
     # Separate features and labels for train and test data
-    train_features = train_data_preprocessed.drop('Class', axis=1)
-    train_labels = train_data_preprocessed['Class']
-    test_features = test_data_preprocessed.drop('Class', axis=1)
-    test_labels = test_data_preprocessed['Class']
+    train_features = train_data_preprocessed.drop('class', axis=1)
+    train_labels = train_data_preprocessed['class']
+    test_features = test_data_preprocessed.drop('class', axis=1)
+    test_labels = test_data_preprocessed['class']
 
     return train_features, train_labels, test_features, test_labels
 
@@ -66,9 +66,9 @@ def process_fold(fold_number, dataset_path, method):
         reduction_knn = ReductionKNN(ogKNN, ogKNN)
         reduced_data = reduction_knn.apply_reduction(pd.concat([train_features, train_labels], axis=1), method)
         reduction_time = time.time() - start
-        reduced_data.to_csv(f"ReducedFolds/hepatitis.fold.{fold_number:06d}.train.{method}.csv")
-        train_features_reduced = reduced_data.drop('Class', axis=1)
-        train_labels_reduced = reduced_data['Class']
+        reduced_data.to_csv(f"ReducedFolds/mushroom.fold.{fold_number:06d}.train.{method}.csv")
+        train_features_reduced = reduced_data.drop('class', axis=1)
+        train_labels_reduced = reduced_data['class']
         reduction_percentage = 100 * (len(train_labels_reduced) / len(train_labels))
     
     
@@ -124,5 +124,5 @@ def main(dataset_path):
 
 
 if __name__ == "__main__":
-    dataset_path = '..\\datasets\\hepatitis'
+    dataset_path = '..\\datasets\\mushroom'
     main(dataset_path)
