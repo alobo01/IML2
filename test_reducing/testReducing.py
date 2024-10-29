@@ -87,7 +87,7 @@ def main():
 
     # Plot the original dataset
     #methods = ['GCNN', 'RENN', 'IB2']
-    methods = ['EENTH']
+    methods = ['EENTH', 'DROP3', 'GCNN']
     # Apply each reduction method and plot the results
     for i, method in enumerate(methods):
         # Measure execution time for each reduction
