@@ -14,9 +14,10 @@ from classes.Reader import DataPreprocessor
 
 # Function to load data from ARFF files for a fold
 def load_fold_data(fold_number, dataset_path):
-    train_file = os.path.join(dataset_path, f'hepatitis.fold.{fold_number:06d}.train.arff')
-    test_file = os.path.join(dataset_path, f'hepatitis.fold.{fold_number:06d}.test.arff')
-    loaded_preprocessor = DataPreprocessor().load("hepatitis_preprocessor.joblib")
+    train_file = os.path.join(dataset_path, f'mushroom.fold.{fold_number:06d}.train.arff')
+    test_file = os.path.join(dataset_path, f'mushroom.fold.{fold_number:06d}.test.arff')
+
+    loaded_preprocessor = DataPreprocessor().load("mushroom_preprocessor.joblib")
     train_data_preprocessed = loaded_preprocessor.transform(DataPreprocessor.load_arff(train_file))
     test_data_preprocessed = loaded_preprocessor.transform(DataPreprocessor.load_arff(test_file))
 
@@ -175,5 +176,5 @@ def main(dataset_path):
 
 
 if __name__ == "__main__":
-    dataset_path = '..\\datasets\\hepatitis'
+    dataset_path = '..\\datasets\\mushroom'  # Example path
     main(dataset_path)

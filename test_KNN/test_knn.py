@@ -13,7 +13,7 @@ from classes.KNN import KNNAlgorithm, apply_weighting_method
 
 # # 1. Load data from .joblib
 loaded_preprocessor = DataPreprocessor().load("hepatitis_preprocessor.joblib")
-train_data_preprocessed = loaded_preprocessor.transform()
+train_data_preprocessed = loaded_preprocessor.transform(DataPreprocessor.load_arff("hepatitis.fold.000000.train.arff"))
 
 # Separate features and labels for the training data
 train_features = train_data_preprocessed.drop('Class', axis=1)
@@ -123,7 +123,7 @@ if __name__ == '__main__':
     results_df = pd.DataFrame(results)
 
     # 7. Find the configuration with the highest accuracy
-    top_results = results_df.nlargest(10, 'accuracy')
+    top_results = results_df.nlargest(20, 'accuracy')
 
     # 8. Print the top configurations
     for rank, (_, result) in enumerate(top_results.iterrows(), start=1):
