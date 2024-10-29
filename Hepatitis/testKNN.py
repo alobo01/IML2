@@ -16,7 +16,6 @@ from classes.Reader import DataPreprocessor
 def load_fold_data(fold_number, dataset_path):
     train_file = os.path.join(dataset_path, f'hepatitis.fold.{fold_number:06d}.train.arff')
     test_file = os.path.join(dataset_path, f'hepatitis.fold.{fold_number:06d}.test.arff')
-
     loaded_preprocessor = DataPreprocessor().load("hepatitis_preprocessor.joblib")
     train_data_preprocessed = loaded_preprocessor.transform(DataPreprocessor.load_arff(train_file))
     test_data_preprocessed = loaded_preprocessor.transform(DataPreprocessor.load_arff(test_file))
@@ -176,5 +175,5 @@ def main(dataset_path):
 
 
 if __name__ == "__main__":
-    dataset_path = '..\\datasets\\hepatitis'  # Example path
+    dataset_path = '..\\datasets\\hepatitis'
     main(dataset_path)

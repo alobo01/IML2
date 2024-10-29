@@ -295,10 +295,10 @@ class ReductionKNN:
                     neighbors_neighbor_labels = sorted_labels.loc[neighbor_neighbors].values
 
                     # Check the majority label among the neighbor's neighbors, without including the original point
-                    without_point = np.argmax(np.bincount(neighbors_neighbor_labels))
+                    without_point = np.argmax(np.bincount(neighbors_neighbor_labels.astype(int)))
 
                     # Check the majority label when including the original point's label
-                    with_point = np.argmax(np.bincount(np.append(neighbors_neighbor_labels, point_label)))
+                    with_point = np.argmax(np.bincount(np.append(neighbors_neighbor_labels, point_label).astype(int)))
 
                     # If the class of the neighbor is classified correctly without the point
                     if without_point == sorted_labels.loc[neighbor_idx]:
@@ -318,6 +318,28 @@ class ReductionKNN:
 
         # Return the original indices of the points to keep
         return original_index[remaining_indices].tolist()
+
+    def fast_enn(self, features: DataFrame, labels: DataFrame, k=3):
+        absorbed = pd.Series(True, index=features.index)
+
+        knn = NearestNeighbors(n_neighbors=k)
+        knn.fit(features[absorbed], labels[absorbed])
+
+        for i in features.index[absorbed]:
+            _, neighbors = knn.kneighbors(features.loc[i].values.reshape(1, -1))
+            neighbor_labels = labels.values[neighbors[0][1:]]  # excluding the point itself
+
+            # Count occurrences of each label among neighbors
+            counts = Counter(neighbor_labels)
+
+            # Get the most common label and its count
+            most_common_label, most_common_count = counts.most_common(1)[0]
+
+            # If majority of k neighbors disagree, remove the point
+            if most_common_label != labels[i]:
+                absorbed[i] = False
+
+        return absorbed[absorbed].index.tolist()
 
     def repeated_edited_nearest_neighbor(self, features: DataFrame, labels: DataFrame, k=3):
         """
@@ -397,6 +419,56 @@ class ReductionKNN:
                 condensed_indices.append(i)
 
         return condensed_indices
+
+    def editing_algorithm_estimating_class_probabilities_and_threshold(self, features, labels, k=3, mu=0.1):
+        """
+        Reference: https://campusvirtual.ub.edu/pluginfile.php/8517391/mod_resource/content/1/EENTh_A_Stochastic_Approach_to_Wilsons_Editing_Algorith.pdf
+
+        EENTH Algorithm: A Threshold-based Editing Algorithm for Classification with Nearest Neighbors.
+
+        This algorithm implements a threshold version of Wilson's editing algorithm (EENTH).
+        It starts with S = X (the entire dataset), and for each instance, it checks if the instance
+        satisfies the following conditions:
+
+        1. A distance threshold (theta) which is the maximum distance among the k nearest neighbors (δ_k-prob(x)).
+        2. A class probability threshold (mu), where the maximum class probability p_j of the object x
+           must exceed the threshold for it to be retained.
+
+        For each instance in the dataset, if the predicted class probability is too low or the
+        distance exceeds the threshold, the point is removed from the set S. This is a one-pass
+        algorithm, meaning each point is evaluated once and removed if it doesn't meet the criteria.
+
+        Args:
+            features (numpy array): The feature vectors of the dataset.
+            labels (numpy array): The corresponding labels for the dataset.
+            k (int): The number of nearest neighbors to consider. Default is 3.
+            theta (float): The distance threshold for δ_k-prob(x). Default is 0.1.
+            mu (float): The minimum acceptable class probability p_j. Default is 0.6.
+
+        Returns:
+            Filtered features and labels after removing instances that do not meet the classification criteria.
+        """
+
+        indices = []
+        for idx in features.index:
+            (neighbours, distances), neighbours_labels = self.originalKNN.get_neighbors(features.loc[idx],
+                                                                                        custom_k=k + 1,
+                                                                                        return_distances=True)
+            neighbours, distances, neighbours_labels = neighbours[1:], distances[1:], neighbours_labels[1:]
+            weighting_vector = 1 / (np.ones(len(distances)) + distances)
+
+            class_probabilities = {}
+            for index, l in enumerate(neighbours_labels):
+                class_probabilities[l] = class_probabilities.get(l, 0) + weighting_vector[index]
+
+            # Estimate class probabilities for point x
+            predicted_class = max(class_probabilities, key=class_probabilities.get)  # Class with highest probability
+            p_j = class_probabilities[predicted_class] / sum(class_probabilities.values())  # Normalize probability
+            # If the predicted class does not match the actual class or the thresholds are violated, remove the point
+            if not (predicted_class != labels[idx] or p_j <= mu):
+                indices.append(idx)
+
+        return indices
 
     def evaluate(self, test_data: DataFrame):
         """

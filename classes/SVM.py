@@ -1,39 +1,41 @@
 from sklearn.svm import SVC
 from sklearn.model_selection import cross_val_score
-from sklearn.metrics import accuracy_score, classification_report
-from sklearn.multiclass import OneVsRestClassifier
 import pandas as pd
+import time
+import numpy as np
+from sklearn.metrics import accuracy_score, roc_auc_score, recall_score, precision_score, f1_score, confusion_matrix
+from sklearn.preprocessing import label_binarize
 
 
 class SVM():
     """
-    SVM Classifier Class with One-vs-Rest for multiclass problems.
+    SVM Classifier Class for two-class problems.
 
     Attributes:
         - train_data: DataFrame of training features.
         - train_labels: Series of training labels.
-        - kernel: Kernel type to be used in the SVM ('linear', 'rbf', etc.)
+        - kernel: Kernel type to be used in the SVM ('linear', 'rbf', 'poly' or 'sigmoid')
         - C: Regularization parameter for the SVM.
         - gamma: Kernel coefficient for ‘rbf’, ‘poly’ and ‘sigmoid’.
+        - degree: degree when the polynomial kernel is used
     """
 
     def __init__(self, train_data: pd.DataFrame, train_labels: pd.Series, kernel: str = 'rbf', C: float = 1.0,
-                 gamma: str = 'scale'):
+                 gamma: str = 'scale', degree: int = 2):
         self.train_data = train_data
         self.train_labels = train_labels
         self.kernel = kernel
         self.C = C
         self.gamma = gamma
         self.model = None
+        self.degree= degree
 
     def train(self):
         """
-        Train the SVM model using the One-vs-Rest strategy for multiclass classification.
+        Train the SVM model using the One-vs-Rest/One-vs-One strategy for multiclass classification.
         """
-        base_svc = SVC(kernel=self.kernel, C=self.C, gamma=self.gamma)
-        self.model = OneVsRestClassifier(base_svc)
+        self.model = SVC(kernel=self.kernel, C=self.C, gamma=self.gamma, degree=self.degree)
         self.model.fit(self.train_data, self.train_labels)
-        print(f"Model trained with kernel='{self.kernel}', C={self.C}, gamma='{self.gamma}'")
 
     def predict(self, data: pd.DataFrame):
         """
@@ -44,6 +46,7 @@ class SVM():
         if self.model is None:
             raise ValueError("The model needs to be trained before making predictions.")
         return self.model.predict(data)
+
 
     def evaluate(self, test_data: pd.DataFrame, test_labels: pd.Series):
         """
@@ -58,31 +61,16 @@ class SVM():
         if self.model is None:
             raise ValueError("The model needs to be trained before evaluation.")
 
-        predictions = self.predict(test_data)
-        test_accuracy = accuracy_score(test_labels, predictions)
-        # Automatically generate class labels
-        unique_labels = sorted(self.train_labels.unique())
-        class_names = [f'Class {i}' for i in unique_labels]
-        report = classification_report(test_labels, predictions, target_names=class_names)
+        start_time = time.time()
+        y_pred = self.model.predict(test_data)
+        elapsed_time = time.time() - start_time
+        performance = elapsed_time / len(test_labels)
+        model_metrics = [accuracy_score(test_labels, y_pred),performance,roc_auc_score(test_labels, y_pred),
+                         recall_score(test_labels, y_pred), precision_score(test_labels, y_pred),
+                         f1_score(test_labels,y_pred), confusion_matrix(test_labels, y_pred)]
 
-        print(f"Test Accuracy: {test_accuracy:.4f}")
-        print(f"Classification Report:\n{report}")
+        return model_metrics
 
-        return test_accuracy, report
-
-    def cross_validate(self, cv: int = 5):
-        """
-        Perform cross-validation on the training data using One-vs-Rest strategy.
-        Args:
-        - cv: Number of folds for cross-validation.
-        Returns cross-validation accuracy.
-        """
-        if self.model is None:
-            raise ValueError("The model needs to be trained before cross-validation.")
-
-        cv_scores = cross_val_score(self.model, self.train_data, self.train_labels, cv=cv)
-        print(f"Cross-Validation Accuracy: {cv_scores.mean():.4f} ± {cv_scores.std():.4f}")
-        return cv_scores
 
     def set_params(self, kernel=None, C=None, gamma=None):
         """
@@ -94,4 +82,4 @@ class SVM():
             self.C = C
         if gamma:
             self.gamma = gamma
-        print(f"Model parameters updated: kernel='{self.kernel}', C={self.C}, gamma='{self.gamma}'")
+

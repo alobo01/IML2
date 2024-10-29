@@ -15,7 +15,7 @@ matplotlib.use('Agg')  # Set backend to Agg for better file saving
 
 
 def save_dataframe_description_analysis(df, folder_name="plots_and_tables"):
-    # Create folder if it doesn't exist
+    # Create sections if it doesn't exist
     if not os.path.exists(folder_name):
         os.makedirs(folder_name)
 
@@ -80,7 +80,7 @@ def analyze_feature_importance(df, n_top_features=5, class_column=None, folder_n
     list: Names of the n most influential features
     """
 
-    # Create folder if it doesn't exist
+    # Create sections if it doesn't exist
     if not os.path.exists(folder_name):
         os.makedirs(folder_name)
 
@@ -250,13 +250,13 @@ def save_feature_distributions_by_class(df, folder_name="plots_and_tables"):
     df : pandas.DataFrame
         The complete dataset containing features and class labels
     folder_name : str
-        The name of the folder where plots will be saved (default: "plots_and_tables")
+        The name of the sections where plots will be saved (default: "plots_and_tables")
     """
 
     # Set style for better-looking plots
     plt.style.use('default')  # Using default style instead of seaborn
 
-    # Create folder if it doesn't exist
+    # Create sections if it doesn't exist
     os.makedirs(folder_name, exist_ok=True)
 
     # Create a subfolder for the distribution plots

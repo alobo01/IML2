@@ -54,23 +54,31 @@ def process_fold(fold_number, dataset_path, method):
 
     # Initialize original KNN
     ogKNN = KNNAlgorithm(k=3)
-    
-    if method == 'ogKNN':
+    ogKNN.fit(train_features, train_labels)
+    if method == 'None':
         model = ogKNN
         reduction_percentage = 100
+        reduction_time = 0
         train_features_reduced = train_features
         train_labels_reduced = train_labels
     else:
+        start = time.time()
         reduction_knn = ReductionKNN(ogKNN, ogKNN)
         reduced_data = reduction_knn.apply_reduction(pd.concat([train_features, train_labels], axis=1), method)
+        reduction_time = time.time() - start
+        reduced_data.to_csv(f"ReducedFolds/hepatitis.fold.{fold_number:06d}.train.{method}.csv")
         train_features_reduced = reduced_data.drop('Class', axis=1)
         train_labels_reduced = reduced_data['Class']
         reduction_percentage = 100 * (len(train_labels_reduced) / len(train_labels))
-
+    
+    
+    
     # Fit the model and evaluate it
-    ogKNN.fit(train_features_reduced, train_labels_reduced)
-    metrics = evaluate_model(ogKNN, test_features, test_labels)
+    #ogKNN.fit(train_features_reduced, train_labels_reduced)
+    #metrics = evaluate_model(ogKNN, test_features, test_labels)
+    metrics = {}
     metrics['reduction_percentage'] = reduction_percentage
+    metrics['reduction_time'] = reduction_time
 
     return fold_number, metrics
 
@@ -78,19 +86,11 @@ def process_fold(fold_number, dataset_path, method):
 # Main function to process all folds
 def main(dataset_path):
     # Reduction methods to compare
-    reduction_methods = ['ogKNN', 'GCNN', 'RENN', 'IB2']
+    reduction_methods = ['DROP3', 'None', 'GCNN', 'EENTH']
     n_folds = 10
 
     # Initialize result storage
     results = {
-        'method': [],
-        'accuracy': [],
-        'roc_auc': [],
-        'recall': [],
-        'precision': [],
-        'f1_score': [],
-        'reduction_percentage': [],
-        'confusion_matrix': [],
     }
 
     # Iterate over methods
@@ -108,24 +108,12 @@ def main(dataset_path):
             fold_metrics = []
             for future in futures:
                 fold_number, metrics = future.result()
-                fold_metrics.append(metrics)
+                results[(fold_number,method)] = metrics
                 print(f"Completed fold {fold_number} for method {method}")
 
-            # Calculate mean metrics over the folds
-            mean_metrics = {
-                'accuracy': np.mean([m['accuracy'] for m in fold_metrics]),
-                'roc_auc': np.mean([m['roc_auc'] for m in fold_metrics]),
-                'recall': np.mean([m['recall'] for m in fold_metrics]),
-                'precision': np.mean([m['precision'] for m in fold_metrics]),
-                'f1_score': np.mean([m['f1_score'] for m in fold_metrics]),
-                'reduction_percentage': np.mean([m['reduction_percentage'] for m in fold_metrics]),
-                'confusion_matrix': np.mean([m['confusion_matrix'] for m in fold_metrics], axis=0)
-            }
 
-            # Save metrics for this method
-            results['method'].append(method)
-            for metric, value in mean_metrics.items():
-                results[metric].append(value)
+
+
 
     filename = 'knn_reduction_comparison_results'
     # Save results to a pickle file
