@@ -295,10 +295,10 @@ class ReductionKNN:
                     neighbors_neighbor_labels = sorted_labels.loc[neighbor_neighbors].values
 
                     # Check the majority label among the neighbor's neighbors, without including the original point
-                    without_point = np.argmax(np.bincount(neighbors_neighbor_labels))
+                    without_point = np.argmax(np.bincount(neighbors_neighbor_labels.astype(int)))
 
                     # Check the majority label when including the original point's label
-                    with_point = np.argmax(np.bincount(np.append(neighbors_neighbor_labels, point_label)))
+                    with_point = np.argmax(np.bincount(np.append(neighbors_neighbor_labels, point_label).astype(int)))
 
                     # If the class of the neighbor is classified correctly without the point
                     if without_point == sorted_labels.loc[neighbor_idx]:
@@ -328,8 +328,15 @@ class ReductionKNN:
         for i in features.index[absorbed]:
             _, neighbors = knn.kneighbors(features.loc[i].values.reshape(1, -1))
             neighbor_labels = labels.values[neighbors[0][1:]]  # excluding the point itself
+
+            # Count occurrences of each label among neighbors
+            counts = Counter(neighbor_labels)
+
+            # Get the most common label and its count
+            most_common_label, most_common_count = counts.most_common(1)[0]
+
             # If majority of k neighbors disagree, remove the point
-            if np.argmax(np.bincount(neighbor_labels)) != labels[i]:
+            if most_common_label != labels[i]:
                 absorbed[i] = False
 
         return absorbed[absorbed].index.tolist()
