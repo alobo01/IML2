@@ -40,7 +40,7 @@ class KNNAlgorithm:
         self.train_labels = train_labels
         self.train_features = train_features
 
-    def get_distance(self, distance_metric: str) -> Callable[[pd.Series, pd.Series], float]:
+    def get_distance(self, distance_metric: str) -> Callable[[pd.DataFrame, pd.DataFrame], pd.DataFrame]:
         """
         Choose the distance function based on the selected metric.
         """
@@ -53,7 +53,7 @@ class KNNAlgorithm:
         else:
             raise ValueError(f"Unsupported distance function: {distance_metric}")
 
-    def get_vote(self, voting_policy: str) -> Callable[[Any, Any, pd.Series], int]:
+    def get_vote(self, voting_policy: str) -> Callable[[Any, Any], int]:
         """
         Choose the vote function based on the selected policy.
         """
@@ -67,113 +67,94 @@ class KNNAlgorithm:
             raise ValueError(f"Unsupported voting policy: {voting_policy}")
 
     @staticmethod
-    #@lru_cache(maxsize=None)
-    def euclidean_distance(vec1: pd.Series, vec2: pd.Series) -> float:
-        """
-        Euclidean distance metric.
-        """
-        return np.sqrt(np.sum((vec1 - vec2) ** 2))
+    def euclidean_distance(vec1: pd.DataFrame, vec2: pd.DataFrame) -> pd.DataFrame:
+        return np.sqrt(((vec1.values[:, np.newaxis] - vec2.values) ** 2).sum(axis=2))
 
     @staticmethod
-    #@lru_cache(maxsize=None)
-    def manhattan_distance(vec1: pd.Series, vec2: pd.Series) -> float:
-        """
-        Manhattan distance metric.
-        """
-        return np.sum(np.abs(vec1 - vec2))
+    def manhattan_distance(vec1: pd.DataFrame, vec2: pd.DataFrame) -> pd.DataFrame:
+        return np.abs(vec1.values[:, np.newaxis] - vec2.values).sum(axis=2)
 
     @staticmethod
-    #@lru_cache(maxsize=None)
-    def clark_distance(vec1: pd.Series, vec2: pd.Series) -> float:
-        """
-        Clark distance metric.
-        """
-        numerator = np.abs(vec1 - vec2)
-        denominator = vec1 + vec2
+    def clark_distance(vec1: pd.DataFrame, vec2: pd.DataFrame) -> pd.DataFrame:
+        numerator = np.abs(vec1.values[:, np.newaxis] - vec2.values)
+        denominator = vec1.values[:, np.newaxis] + vec2.values + 1e-10  # Avoid division by zero
         squared_ratio = (numerator / denominator) ** 2
+        return np.nansum(squared_ratio, axis=2)  # Handle NaN values if any
 
-        return np.sqrt(squared_ratio.sum())
-
-    def get_neighbors(self, test_row: pd.Series, custom_k = None, return_distances = False) -> tuple[Any, Any]:
+    def get_neighbors(self, test_features: pd.DataFrame, custom_k=None, return_distances=False) -> list[
+        tuple[Any, Any]]:
         """
-        Identify the k nearest neighbors for a given test row.
+        Identify the k nearest neighbors for each row in the test_features DataFrame
+        using the custom distance methods.
         """
         if not custom_k:
             custom_k = self.k
-        distances = [(index, self.distance(test_row, self.train_features.iloc[index])) for index in range(len(self.train_features))]
-        #sorted_distances = sorted(distances, key=lambda x: x[1])
-        all_distances = heapq.nsmallest(custom_k, distances, key=lambda x: x[1])
-        if return_distances:
-            neighbors_idx, distances = [], []
-            for (idx,distance) in all_distances:
-                neighbors_idx.append(idx)
-                distances.append(distance)
-            neighbors_features = self.train_features.iloc[neighbors_idx]
-            neighbors_labels = self.train_labels.iloc[neighbors_idx]
-            return (neighbors_features, distances), neighbors_labels
 
-        else:
-            neighbors_idx = [index for index, _ in all_distances]
+        # Compute pairwise distances using self.distance()
+        distance_matrix = self.distance(test_features, self.train_features)
 
+        # For each test row, find the indices of the `custom_k` nearest train rows
+        nearest_indices = np.argsort(distance_matrix, axis=1)[:, :custom_k]
+        nearest_distances = np.take_along_axis(distance_matrix, nearest_indices, axis=1) if return_distances else None
+
+        results = []
+        for i, neighbors_idx in enumerate(nearest_indices):
             neighbors_features = self.train_features.iloc[neighbors_idx]
             neighbors_labels = self.train_labels.iloc[neighbors_idx]
 
-            return neighbors_features, neighbors_labels
+            if return_distances:
+                results.append(((neighbors_features, nearest_distances[i].tolist()), neighbors_labels))
+            else:
+                results.append((neighbors_features, neighbors_labels))
 
-    def classify(self, test_row: pd.Series) -> Union[int, float]:
+        return results
+
+    def classify(self, test_features: pd.DataFrame) -> list[int]:
         """
-        Classify a single example using k-nearest neighbors.
+        Classify each example in the test_features using k-nearest neighbors.
         """
-        neighbors_features, neighbors_labels = self.get_neighbors(test_row)
+        neighbors = self.get_neighbors(test_features, return_distances=True)
+        return [self.vote(labels, distances) for ((features, distances), labels) in neighbors]
 
-        return self.vote(neighbors_labels, neighbors_features, test_row)
-
-    def majority_class_vote(self, neighbors_labels, neighbors_features = None, test_row: pd.Series = None) -> int:
+    def majority_class_vote(self, neighbors_labels, neighbors_distances) -> int:
         """
         Majority class voting: Return the most common class among the neighbors.
         """
         return neighbors_labels.mode()[0]
 
-    def inverse_distance_weighted(self, neighbors_labels, neighbors_features, test_row: pd.Series) -> int:
+    def inverse_distance_weighted(self, neighbors_labels, neighbors_distances) -> int:
         """
         Inverse distance weighting: Weight the class labels by the inverse of their distances.
         """
-        distances = [self.distance(test_row, row) for _, row in neighbors_features.iterrows()]
-        weights = [1 / (d + 1e-5) for d in distances]
+        weights = 1 / (np.array(neighbors_distances) + 1e-5)
         class_vote = {}
 
-        for i, weight in enumerate(weights):
-            label = neighbors_labels.iloc[i]
+        for i, (weight, label) in enumerate(zip(weights, neighbors_labels)):
             if label not in class_vote:
                 class_vote[label] = 0
             class_vote[label] += weight
 
-        max_vote_label = max(class_vote, key=class_vote.get)
-        return max_vote_label
+        return max(class_vote, key=class_vote.get)
 
-    def shepard_vote(self, neighbors_labels, neighbors_features, test_row: pd.Series) -> int:
+    def shepard_vote(self, neighbors_labels, neighbors_distances) -> int:
         """
         Shepard's method: Use a power-based weighting.
         """
-        distances = [self.distance(test_row, row) for _, row in neighbors_features.iterrows()]
-        weights = [np.exp(-d) for d in distances]
+        weights = np.exp(-np.array(neighbors_distances))
         class_vote = {}
 
-        for i, weight in enumerate(weights):
-            label = neighbors_labels.iloc[i]
+        for i, (weight, label) in enumerate(zip(weights, neighbors_labels)):
             if label not in class_vote:
                 class_vote[label] = 0
             class_vote[label] += weight
 
-        max_vote_label = max(class_vote, key=class_vote.get)
-        return max_vote_label
+        return max(class_vote, key=class_vote.get)
 
     def predict(self, test_features: pd.DataFrame) -> List[Union[int, float]]:
         """
         Predict the class labels for the test set.
         """
-        predictions = [self.classify(row) for _, row in test_features.iterrows()]
-        return predictions
+        return self.classify(test_features)
 
     def score(self, test_features: pd.DataFrame, test_labels: pd.Series) -> float:
         """

@@ -59,7 +59,7 @@ def read_pickle_and_generate_knn_report(pickle_file, output_html='results_report
 
     print(f"Report saved as {output_html}")
 
-read_pickle_and_generate_knn_report('knn_comparison_results.pkl',output_html="results_knn_report.html")
+read_pickle_and_generate_knn_report('knn_comparison_results.pkl',output_html="results_knn_report_test.html")
 
 
 #Mari
