@@ -1,7 +1,7 @@
 import pandas as pd
 from scipy.io.arff import loadarff
 from sklearn.impute import SimpleImputer
-from sklearn.preprocessing import LabelEncoder, OneHotEncoder, TargetEncoder
+from sklearn.preprocessing import LabelEncoder, OneHotEncoder, TargetEncoder, MinMaxScaler, RobustScaler
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 import numpy as np
@@ -13,6 +13,7 @@ class DataPreprocessor:
     """
     A class for preprocessing data with support for ARFF files, handling both numerical and categorical features.
     Supports OneHotEncoder and TargetEncoder for categorical features, with class column always using LabelEncoder.
+    Supports different scaling options for numerical features: None, MinMax, or RobustScaler.
     """
 
     def __init__(self, data=None, class_column='class'):
@@ -36,7 +37,19 @@ class DataPreprocessor:
             except Exception as e:
                 raise Exception(f"Error loading ARFF file: {str(e)}")
 
-    def fit(self, data=None, cat_encoding='binary'):
+    def fit(self, data=None, cat_encoding='binary', num_scaling=None):
+        """
+        Fit the preprocessor to the data.
+
+        Parameters:
+        -----------
+        data : pandas.DataFrame, optional
+            The input data to fit on. If None, uses the data provided during initialization.
+        cat_encoding : str, optional (default='binary')
+            The encoding method for categorical variables. Options: 'binary', 'target'
+        num_scaling : str, optional (default=None)
+            The scaling method for numerical variables. Options: None, 'minmax', 'robust'
+        """
         if data is None:
             if self.data is None:
                 raise ValueError("No data provided. Either pass data to fit() or initialize with data.")
@@ -44,6 +57,9 @@ class DataPreprocessor:
 
         if cat_encoding not in ['binary', 'target']:
             raise ValueError("cat_encoding must be 'binary' or 'target'")
+
+        if num_scaling not in [None, 'minmax', 'robust']:
+            raise ValueError("num_scaling must be None, 'minmax', or 'robust'")
 
         self.has_class = self.class_column in data.columns
         if self.has_class:
@@ -74,9 +90,13 @@ class DataPreprocessor:
             self.feature_names_.extend(self.categorical_cols)
 
         if self.numeric_cols:
-            num_steps = [
-                ('imputer', SimpleImputer(strategy='median'))
-            ]
+            num_steps = [('imputer', SimpleImputer(strategy='median'))]
+
+            if num_scaling == 'minmax':
+                num_steps.append(('scaler', MinMaxScaler()))
+            elif num_scaling == 'robust':
+                num_steps.append(('scaler', RobustScaler()))
+
             transformers.append(('num', Pipeline(steps=num_steps), self.numeric_cols))
             self.feature_names_.extend(self.numeric_cols)
 
@@ -84,22 +104,71 @@ class DataPreprocessor:
         self.preprocessor.fit(data, y=self.class_data if cat_encoding == 'target' else None)
 
     def transform(self, data=None):
+        """
+        Transform the input data using the fitted preprocessor.
+
+        Parameters:
+        -----------
+        data : Union[str, pandas.DataFrame, None], optional
+            The input data to transform. Can be:
+            - A pandas DataFrame
+            - A file path to an ARFF file
+            - None (uses the data provided during initialization)
+
+        Returns:
+        --------
+        pandas.DataFrame
+            The transformed data
+
+        Raises:
+        -------
+        ValueError
+            If the preprocessor is not fitted or if the input format is invalid
+        FileNotFoundError
+            If the provided file path does not exist
+        """
         if self.preprocessor is None:
             raise ValueError("Preprocessor not fitted. Call fit() first.")
 
+        # Handle different input types
         if data is None:
-            data = self.data.copy()
+            if self.data is None:
+                raise ValueError("No data provided. Either pass data to transform() or initialize with data.")
+            data_to_transform = self.data.copy()
+        elif isinstance(data, str):
+            try:
+                data_to_transform = self.load_arff(data)
+            except FileNotFoundError:
+                raise FileNotFoundError(f"The file {data} was not found.")
+            except Exception as e:
+                raise Exception(f"Error loading ARFF file: {str(e)}")
+        elif isinstance(data, pd.DataFrame):
+            data_to_transform = data.copy()
+        else:
+            raise ValueError("data must be None, a pandas DataFrame, or a file path string")
 
-        if self.class_column in data.columns:
-            class_data = data[self.class_column].copy()
-            data = data.drop(columns=[self.class_column])
+        # Extract class data if present
+        if self.class_column in data_to_transform.columns:
+            class_data = data_to_transform[self.class_column].copy()
+            data_to_transform = data_to_transform.drop(columns=[self.class_column])
         else:
             class_data = None
 
-        transformed_data = self.preprocessor.transform(data)
+        # Verify all required columns are present
+        missing_cols = set(self.feature_names_) - set(data_to_transform.columns)
+        if missing_cols:
+            raise ValueError(f"Missing columns in input data: {missing_cols}")
+
+        # Ensure columns are in the correct order
+        data_to_transform = data_to_transform[self.feature_names_]
+
+        # Transform the data
+        transformed_data = self.preprocessor.transform(data_to_transform)
         result_df = pd.DataFrame(transformed_data, columns=self.feature_names_)
 
+        # Handle class column if present
         if class_data is not None:
+            # Map unknown classes to the first known class
             class_data = class_data.map(
                 lambda x: x if x in self.class_encoder.classes_ else self.class_encoder.classes_[0])
             result_df[self.class_column] = self.class_encoder.transform(class_data)
