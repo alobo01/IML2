@@ -1,7 +1,7 @@
 import pandas as pd
 from scipy.io.arff import loadarff
 from sklearn.impute import SimpleImputer
-from sklearn.preprocessing import MinMaxScaler, RobustScaler, OneHotEncoder, LabelEncoder, FunctionTransformer
+from sklearn.preprocessing import LabelEncoder, OneHotEncoder, TargetEncoder, MinMaxScaler, RobustScaler
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 import numpy as np
@@ -10,158 +10,219 @@ import os
 
 
 class DataPreprocessor:
-    @staticmethod
-    def load_arff(file_path):
-        """Load ARFF file and convert it to a DataFrame."""
-        data, _ = loadarff(file_path)
-        df = pd.DataFrame(data)
-        for column in df.select_dtypes([object]).columns:
-            df[column] = df[column].apply(lambda x: x.decode('utf-8') if isinstance(x, bytes) else x)
-        # Remove ? values
-        df.replace("?", np.nan)
-        return df
+    """
+    A class for preprocessing data with support for ARFF files, handling both numerical and categorical features.
+    Supports OneHotEncoder and TargetEncoder for categorical features, with class column always using LabelEncoder.
+    Supports different scaling options for numerical features: None, MinMax, or RobustScaler.
+    """
 
-    def __init__(self, arff_filepath=None):
+    def __init__(self, data=None, class_column='class'):
         self.preprocessor = None
         self.data = None
-        self.feature_names_ = None
-        self.categorical_cols = None
-        self.numeric_cols = None
-        self.label_encoders = {}
-        self.encoder = None
+        self.feature_names_ = []
+        self.categorical_cols = []
+        self.numeric_cols = []
+        self.class_column = class_column
+        self.class_encoder = LabelEncoder()
+        self.has_class = False
+        self.class_data = None
 
-        if isinstance(arff_filepath, pd.DataFrame):
-            self.data = arff_filepath
-        elif arff_filepath:
+        if isinstance(data, pd.DataFrame):
+            self.data = data.copy()
+        elif isinstance(data, str):
             try:
-                self.data = self.load_arff(arff_filepath)
+                self.data = self.load_arff(data)
             except FileNotFoundError:
-                raise FileNotFoundError(f"The file {arff_filepath} was not found.")
+                raise FileNotFoundError(f"The file {data} was not found.")
             except Exception as e:
                 raise Exception(f"Error loading ARFF file: {str(e)}")
 
-    @staticmethod
-    def get_whole_dataset_as_df(test_fold_path, train_fold_path=None):
-        """Concatenate train and test datasets if both paths are provided."""
-        test_data = DataPreprocessor.load_arff(test_fold_path)
-        if train_fold_path:
-            train_data = DataPreprocessor.load_arff(train_fold_path)
-        else:
-            raise ValueError("No train data provided.")
-        return pd.concat([train_data, test_data], ignore_index=True)
+    def fit(self, data=None, cat_encoding='binary', num_scaling=None):
+        """
+        Fit the preprocessor to the data.
 
-    def fit(self, data: pd.DataFrame = None,
-            cat_imputer_strategy='most_frequent', cat_encoding='binary',
-            num_imputer_strategy='mean', num_scaler='robust'):
+        Parameters:
+        -----------
+        data : pandas.DataFrame, optional
+            The input data to fit on. If None, uses the data provided during initialization.
+        cat_encoding : str, optional (default='binary')
+            The encoding method for categorical variables. Options: 'binary', 'target'
+        num_scaling : str, optional (default=None)
+            The scaling method for numerical variables. Options: None, 'minmax', 'robust'
+        """
         if data is None:
             if self.data is None:
-                raise ValueError("No data provided. Either pass data to fit() or load an ARFF file.")
-            data = self.data
+                raise ValueError("No data provided. Either pass data to fit() or initialize with data.")
+            data = self.data.copy()
+
+        if cat_encoding not in ['binary', 'target']:
+            raise ValueError("cat_encoding must be 'binary' or 'target'")
+
+        if num_scaling not in [None, 'minmax', 'robust']:
+            raise ValueError("num_scaling must be None, 'minmax', or 'robust'")
+
+        self.has_class = self.class_column in data.columns
+        if self.has_class:
+            self.class_data = data[self.class_column].copy()
+            self.class_encoder.fit(self.class_data.dropna())
+            data = data.drop(columns=[self.class_column])
 
         self.categorical_cols = list(data.select_dtypes(include=['object']).columns)
         self.numeric_cols = list(data.select_dtypes(include=['number']).columns)
 
         transformers = []
-        self.feature_names_ = []
 
         if self.categorical_cols:
-            if cat_encoding == 'label':
-                for col in self.categorical_cols:
-                    self.label_encoders[col] = LabelEncoder()
-                    non_null_values = data[col].dropna()
-                    self.label_encoders[col].fit(non_null_values)
-
+            if cat_encoding == 'binary':
                 cat_steps = [
-                    ('imputer', SimpleImputer(strategy=cat_imputer_strategy)),
-                    ('label_encoder', FunctionTransformer(self._label_encode_transform))
+                    ('imputer', SimpleImputer(strategy='most_frequent')),
+                    ('onehot_encoder', OneHotEncoder(drop='if_binary'))
                 ]
-                self.feature_names_.extend(self.categorical_cols)
             else:
+                if not self.has_class:
+                    raise ValueError("Target encoding requires a class column.")
                 cat_steps = [
-                    ('imputer', SimpleImputer(strategy=cat_imputer_strategy))
+                    ('imputer', SimpleImputer(strategy='most_frequent')),
+                    ('target_encoder', TargetEncoder())
                 ]
-                if cat_encoding in ['onehot', 'binary']:
-                    self.encoder = OneHotEncoder(
-                        handle_unknown='ignore',
-                        sparse_output=False,
-                        drop='if_binary' if cat_encoding == 'binary' else None
-                    )
-                    cat_steps.append(('encoder', self.encoder))
 
             transformers.append(('cat', Pipeline(steps=cat_steps), self.categorical_cols))
+            self.feature_names_.extend(self.categorical_cols)
 
         if self.numeric_cols:
-            num_steps = [
-                ('imputer', SimpleImputer(strategy=num_imputer_strategy))
-            ]
-            if num_scaler == 'robust':
-                num_steps.append(('scaler', RobustScaler()))
-            elif num_scaler == 'minmax':
+            num_steps = [('imputer', SimpleImputer(strategy='median'))]
+
+            if num_scaling == 'minmax':
                 num_steps.append(('scaler', MinMaxScaler()))
+            elif num_scaling == 'robust':
+                num_steps.append(('scaler', RobustScaler()))
+
             transformers.append(('num', Pipeline(steps=num_steps), self.numeric_cols))
             self.feature_names_.extend(self.numeric_cols)
 
         self.preprocessor = ColumnTransformer(transformers=transformers)
-        self.preprocessor.fit(data)
+        self.preprocessor.fit(data, y=self.class_data if cat_encoding == 'target' else None)
 
-        # Get feature names after fitting
-        if cat_encoding != 'label' and self.categorical_cols:
-            cat_transformer = self.preprocessor.named_transformers_['cat']
-            self.encoder = cat_transformer.named_steps.get('encoder')
-            if self.encoder:
-                cat_feature_names = self.encoder.get_feature_names_out(self.categorical_cols)
-                self.feature_names_ = list(cat_feature_names) + self.numeric_cols
+    def transform(self, data=None):
+        """
+        Transform the input data using the fitted preprocessor.
 
-    def _label_encode_transform(self, X):
-        """Helper method to apply label encoding to categorical columns."""
-        X = pd.DataFrame(X, columns=self.categorical_cols)
-        for col in self.categorical_cols:
-            encoder = self.label_encoders[col]
-            # Handle unknown categories
-            X[col] = X[col].map(lambda x: x if x in encoder.classes_ else encoder.classes_[0])
-            X[col] = encoder.transform(X[col])
-        return X.values
+        Parameters:
+        -----------
+        data : Union[str, pandas.DataFrame, None], optional
+            The input data to transform. Can be:
+            - A pandas DataFrame
+            - A file path to an ARFF file
+            - None (uses the data provided during initialization)
 
-    def transform(self, data: pd.DataFrame = None):
-        """Transform the given data using the fitted preprocessor."""
+        Returns:
+        --------
+        pandas.DataFrame
+            The transformed data
+
+        Raises:
+        -------
+        ValueError
+            If the preprocessor is not fitted or if the input format is invalid
+        FileNotFoundError
+            If the provided file path does not exist
+        """
         if self.preprocessor is None:
             raise ValueError("Preprocessor not fitted. Call fit() first.")
+
+        # Handle different input types
         if data is None:
-            data = self.data
+            if self.data is None:
+                raise ValueError("No data provided. Either pass data to transform() or initialize with data.")
+            data_to_transform = self.data.copy()
+        elif isinstance(data, str):
+            try:
+                data_to_transform = self.load_arff(data)
+            except FileNotFoundError:
+                raise FileNotFoundError(f"The file {data} was not found.")
+            except Exception as e:
+                raise Exception(f"Error loading ARFF file: {str(e)}")
+        elif isinstance(data, pd.DataFrame):
+            data_to_transform = data.copy()
+        else:
+            raise ValueError("data must be None, a pandas DataFrame, or a file path string")
 
-        transformed_data = self.preprocessor.transform(data)
-        return pd.DataFrame(transformed_data, columns=self.feature_names_)
+        # Extract class data if present
+        if self.class_column in data_to_transform.columns:
+            class_data = data_to_transform[self.class_column].copy()
+            data_to_transform = data_to_transform.drop(columns=[self.class_column])
+        else:
+            class_data = None
 
-    def fit_transform(self, data: pd.DataFrame = None, **kwargs):
-        """Fit the preprocessor and transform the data in one step."""
+        # Verify all required columns are present
+        missing_cols = set(self.feature_names_) - set(data_to_transform.columns)
+        if missing_cols:
+            raise ValueError(f"Missing columns in input data: {missing_cols}")
+
+        # Ensure columns are in the correct order
+        data_to_transform = data_to_transform[self.feature_names_]
+
+        # Transform the data
+        transformed_data = self.preprocessor.transform(data_to_transform)
+        result_df = pd.DataFrame(transformed_data, columns=self.feature_names_)
+
+        # Handle class column if present
+        if class_data is not None:
+            # Map unknown classes to the first known class
+            class_data = class_data.map(
+                lambda x: x if x in self.class_encoder.classes_ else self.class_encoder.classes_[0])
+            result_df[self.class_column] = self.class_encoder.transform(class_data)
+
+        return result_df
+
+    def fit_transform(self, data=None, **kwargs):
         self.fit(data, **kwargs)
         return self.transform(data)
 
-    def save(self, filepath: str):
-        """Save the preprocessor and label encoders to a file."""
+    def save(self, filepath):
         if self.preprocessor is None:
             raise ValueError("Preprocessor not fitted. Nothing to save.")
+
         save_dict = {
             'preprocessor': self.preprocessor,
-            'label_encoders': self.label_encoders,
             'feature_names': self.feature_names_,
             'categorical_cols': self.categorical_cols,
             'numeric_cols': self.numeric_cols,
-            'encoder': self.encoder
+            'class_column': self.class_column,
+            'class_encoder': self.class_encoder,
+            'has_class': self.has_class
         }
         joblib.dump(save_dict, filepath)
 
     @classmethod
-    def load(cls, filepath: str):
-        """Load a preprocessor and label encoders from a file."""
+    def load(cls, filepath):
         if not os.path.exists(filepath):
             raise FileNotFoundError(f"The file {filepath} was not found.")
+
         preprocessor = cls()
         save_dict = joblib.load(filepath)
+
         preprocessor.preprocessor = save_dict['preprocessor']
-        preprocessor.label_encoders = save_dict['label_encoders']
         preprocessor.feature_names_ = save_dict['feature_names']
         preprocessor.categorical_cols = save_dict['categorical_cols']
         preprocessor.numeric_cols = save_dict['numeric_cols']
-        preprocessor.encoder = save_dict['encoder']
+        preprocessor.class_column = save_dict['class_column']
+        preprocessor.class_encoder = save_dict['class_encoder']
+        preprocessor.has_class = save_dict['has_class']
+
         return preprocessor
+
+    @staticmethod
+    def load_arff(file_path):
+        data, _ = loadarff(file_path)
+        df = pd.DataFrame(data)
+        for column in df.select_dtypes([object]).columns:
+            df[column] = df[column].apply(lambda x: x.decode('utf-8') if isinstance(x, bytes) else x)
+        df = df.replace("?", np.nan)
+        return df
+
+    @staticmethod
+    def get_whole_dataset_as_df(test_fold_path, train_fold_path):
+        test_data = DataPreprocessor.load_arff(test_fold_path)
+        train_data = DataPreprocessor.load_arff(train_fold_path)
+        return pd.concat([train_data, test_data], ignore_index=True)
