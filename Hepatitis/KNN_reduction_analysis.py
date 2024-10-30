@@ -1,0 +1,155 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from pathlib import Path
+import os
+
+
+def load_and_prepare_data(csv_path: str) -> pd.DataFrame:
+    """
+    Load the CSV and prepare aggregated statistics for reduction analysis
+    """
+    # Load results
+    results = pd.DataFrame(pd.read_csv(csv_path))
+
+    # Extract configuration parameters and reduction method
+    results[['Algorithm', 'k', 'distance_metric', 'weighting_method', 'voting_policy', 'reduction']] = \
+        results['Model'].str.split(', ', expand=True)
+
+    # Create aggregated results
+    aggregated_results = results.groupby(['reduction']).agg({
+        'Accuracy': ['mean', 'std'],
+        'Time': 'mean',
+        'F1': ['mean', 'std']
+    }).reset_index()
+
+    # Flatten column names
+    aggregated_results.columns = [
+        'reduction', 'mean_accuracy', 'std_accuracy', 'mean_time',
+        'mean_f1', 'std_f1'
+    ]
+
+    return results, aggregated_results
+
+
+def create_plots_folder(base_path: str):
+    """Create folder for plots if it doesn't exist"""
+    Path(base_path).mkdir(parents=True, exist_ok=True)
+
+
+def plot_reduction_accuracy_comparison(results: pd.DataFrame, plots_path: str):
+    """Plot comparison of reduction methods' accuracies"""
+    plt.figure(figsize=(10, 6))
+    sns.boxplot(x='reduction', y='Accuracy', data=results)
+    plt.title('Accuracy Distribution by Reduction Method\nHepatitis Dataset')
+    plt.xlabel('Reduction Method')
+    plt.ylabel('Accuracy')
+    plt.xticks(rotation=45)
+    plt.tight_layout()
+    plt.savefig(os.path.join(plots_path, 'reduction_accuracy_comparison.png'), bbox_inches='tight', dpi=300)
+    plt.close()
+
+
+def plot_time_comparison(aggregated_results: pd.DataFrame, plots_path: str):
+    """Plot time comparison across reduction methods"""
+    plt.figure(figsize=(10, 6))
+    sns.barplot(x='reduction', y='mean_time', data=aggregated_results)
+    plt.title('Average Execution Time by Reduction Method\nHepatitis Dataset')
+    plt.xlabel('Reduction Method')
+    plt.ylabel('Mean Execution Time (seconds)')
+    plt.xticks(rotation=45)
+    plt.tight_layout()
+    plt.savefig(os.path.join(plots_path, 'reduction_time_comparison.png'), bbox_inches='tight', dpi=300)
+    plt.close()
+
+
+def analyze_reduction_methods(aggregated_results: pd.DataFrame):
+    """Analyze and print statistics for each reduction method"""
+    print("\nReduction Methods Analysis:")
+
+    for _, row in aggregated_results.iterrows():
+        print(f"\nReduction Method: {row['reduction']}")
+        print(f"Mean Accuracy: {row['mean_accuracy']:.4f} (±{row['std_accuracy']:.4f})")
+        print(f"Mean F1 Score: {row['mean_f1']:.4f} (±{row['std_f1']:.4f})")
+        print(f"Mean Execution Time: {row['mean_time']:.4f} seconds")
+
+
+def create_comparison_plots(results: pd.DataFrame, plots_path: str):
+    """Create additional comparison plots"""
+    # Accuracy vs Time trade-off
+    plt.figure(figsize=(12, 8))
+    for reduction in results['reduction'].unique():
+        reduction_data = results[results['reduction'] == reduction]
+        plt.scatter(reduction_data['Time'], reduction_data['Accuracy'],
+                    alpha=0.6, label=reduction)
+    plt.xlabel('Execution Time (seconds)')
+    plt.ylabel('Accuracy')
+    plt.title('Time-Accuracy Trade-off by Reduction Method')
+    plt.legend()
+    plt.grid(True)
+    plt.savefig(os.path.join(plots_path, 'reduction_time_accuracy_tradeoff.png'), bbox_inches='tight', dpi=300)
+    plt.close()
+
+    # F1 vs Accuracy correlation
+    plt.figure(figsize=(12, 8))
+    for reduction in results['reduction'].unique():
+        reduction_data = results[results['reduction'] == reduction]
+        plt.scatter(reduction_data['F1'], reduction_data['Accuracy'],
+                    alpha=0.6, label=reduction)
+    plt.xlabel('F1 Score')
+    plt.ylabel('Accuracy')
+    plt.title('F1 Score vs Accuracy Correlation by Reduction Method')
+    plt.legend()
+    plt.grid(True)
+    plt.savefig(os.path.join(plots_path, 'reduction_f1_accuracy_correlation.png'), bbox_inches='tight', dpi=300)
+    plt.close()
+
+
+def statistical_comparison(results: pd.DataFrame):
+    """Perform statistical comparison between reduction methods"""
+    print("\nStatistical Comparison of Reduction Methods:")
+
+    # Overall rankings
+    print("\nOverall Rankings (averaged across all configurations):")
+    rankings = results.groupby('reduction').agg({
+        'Accuracy': ['mean', 'std'],
+        'Time': 'mean',
+        'F1': ['mean', 'std']
+    }).round(4)
+
+    print("\nBy Accuracy:")
+    accuracy_ranking = rankings['Accuracy']['mean'].sort_values(ascending=False)
+    for idx, (reduction, acc) in enumerate(accuracy_ranking.items(), 1):
+        std = rankings.loc[reduction, ('Accuracy', 'std')]
+        print(f"{idx}. {reduction}: {acc:.4f} (±{std:.4f})")
+
+    print("\nBy Execution Time:")
+    time_ranking = rankings['Time']['mean'].sort_values()
+    for idx, (reduction, time) in enumerate(time_ranking.items(), 1):
+        print(f"{idx}. {reduction}: {time:.4f} seconds")
+
+
+def main():
+    # Paths
+    csv_path = 'knn_reduction_results.csv'
+    plots_path = '..\\Hepatitis\\plots_and_tables\\knn_reduction_analysis'
+
+    # Create plots folder
+    create_plots_folder(plots_path)
+
+    # Load and prepare data
+    results, aggregated_results = load_and_prepare_data(csv_path)
+
+    # Generate plots
+    plot_reduction_accuracy_comparison(results, plots_path)
+    plot_time_comparison(aggregated_results, plots_path)
+    create_comparison_plots(results, plots_path)
+
+    # Print analyses
+    analyze_reduction_methods(aggregated_results)
+    statistical_comparison(results)
+
+
+if __name__ == "__main__":
+    main()
