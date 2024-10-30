@@ -93,6 +93,7 @@ def run_reduction_experiments(dataset_path: str, knn_config: Dict):
     """
     reduction_methods = [None, 'EENTH', 'GCNN', 'DROP3']
     results = []
+    sample_counts = []
 
     print(f"Testing reduction methods across 10 folds...")
     for reduction_method in reduction_methods:
@@ -126,7 +127,15 @@ def run_reduction_experiments(dataset_path: str, knn_config: Dict):
                 'F1': f1
             })
 
-    return pd.DataFrame(results)
+            sample_counts.append({
+                'Fold': fold,
+                'Reduction Method': reduction_suffix,
+                'Training Samples': len(train_features)
+            })
+
+    results_df = pd.DataFrame(results)
+    sample_counts_df = pd.DataFrame(sample_counts)
+    return results_df, sample_counts_df
 
 
 if __name__ == "__main__":
@@ -140,5 +149,6 @@ if __name__ == "__main__":
         'voting_policy': 'majority_class'
     }
 
-    results = run_reduction_experiments(dataset_path, knn_config)
+    results, counts = run_reduction_experiments(dataset_path, knn_config)
     results.to_csv('knn_reduction_results.csv', index=False)
+    counts.to_csv('knn_reduction_counts.csv', index=False)

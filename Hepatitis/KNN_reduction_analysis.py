@@ -64,6 +64,42 @@ def plot_time_comparison(aggregated_results: pd.DataFrame, plots_path: str):
     plt.close()
 
 
+def calculate_storage_percentages(sample_counts_df: pd.DataFrame):
+    """
+    Calculate the average percentage of storage reduction for each reduction method compared to the "None" reduction.
+    """
+    storage_percentages = {'NONE': 100}
+
+    for reduction_method in sample_counts_df['Reduction Method'].unique():
+        if reduction_method == "NONE":
+            continue
+
+        reduction_samples = sample_counts_df[sample_counts_df['Reduction Method'] == reduction_method]['Training Samples']
+        none_samples = sample_counts_df[sample_counts_df['Reduction Method'] == "NONE"]['Training Samples']
+
+        avg_reduction_samples = reduction_samples.mean()
+        avg_none_samples = none_samples.mean()
+
+        storage_percentage = avg_reduction_samples / avg_none_samples * 100
+        storage_percentages[reduction_method] = storage_percentage
+
+    return storage_percentages
+
+def plot_storage_comparison(sample_counts: pd.DataFrame, plots_path: str):
+
+    storage_percentages = calculate_storage_percentages(sample_counts)
+
+    # Plot the storage percentages
+    plt.figure(figsize=(8, 6))
+    plt.bar(storage_percentages.keys(), storage_percentages.values())
+    plt.xlabel('Reduction Method')
+    plt.ylabel('Storage Percentage (%)')
+    plt.title('Storage Percentages per Reduction Method')
+    plt.grid()
+    plt.savefig(os.path.join(plots_path, 'storage_percentage_comparison.png'), bbox_inches='tight', dpi=300)
+    plt.close()
+
+
 def analyze_reduction_methods(aggregated_results: pd.DataFrame):
     """Analyze and print statistics for each reduction method"""
     print("\nReduction Methods Analysis:")
@@ -133,6 +169,7 @@ def statistical_comparison(results: pd.DataFrame):
 def main():
     # Paths
     csv_path = 'knn_reduction_results.csv'
+    counts_path = 'knn_reduction_counts.csv'
     plots_path = '..\\Hepatitis\\plots_and_tables\\knn_reduction_analysis'
 
     # Create plots folder
@@ -140,11 +177,13 @@ def main():
 
     # Load and prepare data
     results, aggregated_results = load_and_prepare_data(csv_path)
+    sample_counts = pd.DataFrame(pd.read_csv(counts_path))
 
     # Generate plots
     plot_reduction_accuracy_comparison(results, plots_path)
     plot_time_comparison(aggregated_results, plots_path)
     create_comparison_plots(results, plots_path)
+    plot_storage_comparison(sample_counts, plots_path)
 
     # Print analyses
     analyze_reduction_methods(aggregated_results)
