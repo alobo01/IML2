@@ -138,8 +138,27 @@ class ReductionKNN:
         prototype_labels = pd.Series(prototype_labels)
 
         # Compute δn: minimum distance between points of different classes
-        dist_matrix = pd.DataFrame(np.linalg.norm(features.values[:, np.newaxis] - features.values, axis=2))
-        delta_n = dist_matrix[labels.values[:, np.newaxis] != labels.values].min().min()
+        # For smaller datasets
+        # dist_matrix = pd.DataFrame(np.linalg.norm(features.values[:, np.newaxis] - features.values, axis=2))
+        # delta_n = dist_matrix[labels.values[:, np.newaxis] != labels.values].min().min()
+
+        # Initialize a large minimum distance
+        delta_n = np.inf
+
+        # Compute minimum distance row-by-row
+        for i in range(len(features)):
+            # Calculate distance only for the current row
+            distances = np.linalg.norm(features[i] - features, axis=1)
+
+            # Mask distances where labels are the same
+            mask = labels != labels[i]
+            filtered_distances = distances[mask]
+
+            # Update delta_n if a smaller valid distance is found
+            if len(filtered_distances) > 0:
+                min_dist = filtered_distances.min()
+                if min_dist < delta_n:
+                    delta_n = min_dist
 
         # Iteratively absorb points
         absorbed = pd.Series(False, index=features.index)
