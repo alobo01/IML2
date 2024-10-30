@@ -65,9 +65,9 @@ def drop3(data, k=5, show_plots=True):
 
         xi = X_s[idx].reshape(1, -1)
         yi = y_s[idx]
-
-        X_temp = X_s[temp_indicesOG]
-        y_temp = y_s[temp_indicesOG]
+        temp_indices = keep_indices.copy()
+        X_temp = X_s[temp_indices]
+        y_temp = y_s[temp_indices]
 
         knn = KNeighborsClassifier(n_neighbors=k)
         knn.fit(X_temp, y_temp)
@@ -86,7 +86,7 @@ def drop3(data, k=5, show_plots=True):
         y_pred_with = knn.predict(X_assoc)
         correct_with = np.sum(y_pred_with == y_assoc)
 
-        temp_indices = temp_indicesOG.copy()
+
         temp_indices[idx] = False
         X_temp = X_s[temp_indices]
         y_temp = y_s[temp_indices]
@@ -134,48 +134,44 @@ def drop3(data, k=5, show_plots=True):
 
 # Apply DROP3 with optional intermediate plots
 X_drop3, y_drop3 = drop3(data_sorted, k=5, show_plots=False)
-
-# Visualization
-plt.figure(figsize=(18, 18))
-
-# Plot Original Data
-plt.subplot(2, 2, 1)
+# Original Data Plot
+plt.figure(figsize=(8, 8))
 for class_label in unique_classes:
     plt.scatter(X[y == class_label, 0], X[y == class_label, 1], color=color_dict[class_label], edgecolor='k', alpha=1, label=f'Class {class_label}')
 plt.title('Original Data')
 plt.xlabel('Feature 1')
 plt.ylabel('Feature 2')
 plt.legend()
+plt.show()
 
-# Plot After ENN Reduction
-plt.subplot(2, 2, 2)
+# ENN Reduction Plot
+plt.figure(figsize=(8, 8))
 for class_label in unique_classes:
     plt.scatter(X_enn[y_enn == class_label, 0], X_enn[y_enn == class_label, 1], color=color_dict[class_label], edgecolor='k', alpha=1, label=f'Class {class_label}')
 plt.title('After ENN Reduction')
 plt.xlabel('Feature 1')
 plt.ylabel('Feature 2')
 plt.legend()
+plt.show()
 
-# Plot After DROP3 Reduction
-plt.subplot(2, 2, 3)
+# DROP3 Reduction Plot
+plt.figure(figsize=(8, 8))
 for class_label in unique_classes:
-
     plt.scatter(X_drop3[y_drop3 == class_label, 0], X_drop3[y_drop3 == class_label, 1], color=color_dict[class_label], edgecolor='k', alpha=1, s=100, label=f'Class {class_label}')
 plt.title('After DROP3 Reduction')
 plt.xlabel('Feature 1')
 plt.ylabel('Feature 2')
 plt.legend()
+plt.show()
 
-# Plot After DROP3 Reduction
-plt.subplot(2, 2, 4)
+# Comparison of Original and DROP3 Reduction Plot
+plt.figure(figsize=(8, 8))
 for class_label in unique_classes:
-    plt.scatter(X[y == class_label, 0], X[y == class_label, 1], color=color_dict[class_label], edgecolor='k',
-                alpha=1, s=50, label=f'Class {class_label}')
-    plt.scatter(X_drop3[y_drop3 == class_label, 0], X_drop3[y_drop3 == class_label, 1], color=color_dict[class_label], edgecolor='k', alpha=0.5, s=100, label=f'Class {class_label}')
-plt.title('After DROP3 Reduction')
+    plt.scatter(X[y == class_label, 0], X[y == class_label, 1], color=color_dict[class_label], edgecolor='k', alpha=1, s=20, label=f'Original Class {class_label}')
+    plt.scatter(X_drop3[y_drop3 == class_label, 0], X_drop3[y_drop3 == class_label, 1], color=color_dict[class_label], edgecolor='k', alpha=0.5, s=100, label=f'DROP3 Class {class_label}')
+plt.title('Comparison of Original and DROP3 Reduction')
 plt.xlabel('Feature 1')
 plt.ylabel('Feature 2')
 plt.legend()
-
-plt.tight_layout()
 plt.show()
+print("para")
