@@ -68,10 +68,10 @@ def evaluate_knn(params):
 
 if __name__ == '__main__':
 
-    print(f" - Number of Training Features: {len(train_features)}\n"
-        f" - Number of Training Labels: {len(train_labels)}\n"
-        f" - Number of Test Features: {len(test_features)}\n"
-        f" - Number of Test Labels: {len(test_labels)}")
+    print(f" - Number of Training Features: {train_features.shape}\n"
+        f" - Number of Training Labels: {train_labels.shape}\n"
+        f" - Number of Test Features: {test_features.shape}\n"
+        f" - Number of Test Labels: {test_labels.shape}")
 
     start_preprocess_time = time.time()
 

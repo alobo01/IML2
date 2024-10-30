@@ -11,15 +11,15 @@ def load_and_prepare_data(csv_path: str) -> pd.DataFrame:
     Load the CSV and prepare aggregated statistics
     """
     # Load detailed results
-    detailed_results = pd.DataFrame(pd.read_csv(csv_path))
+    results = pd.DataFrame(pd.read_csv(csv_path))
 
     # Extract configuration parameters from Model column
-    detailed_results[['Algorithm', 'k', 'distance_metric', 'weighting_method', 'voting_policy']] = \
-        detailed_results['Model'].str.split(', ', expand=True)
+    results[['Algorithm', 'k', 'distance_metric', 'weighting_method', 'voting_policy', 'reduction_method']] = \
+        results['Model'].str.split(', ', expand=True)
 
     # Create aggregated results
-    aggregated_results = detailed_results.groupby(
-        ['k', 'distance_metric', 'weighting_method', 'voting_policy']
+    aggregated_results = results.groupby(
+        ['k', 'distance_metric', 'weighting_method', 'voting_policy', 'reduction_method']
     ).agg({
         'Accuracy': ['mean', 'std'],
         'Time': 'mean',
@@ -28,12 +28,12 @@ def load_and_prepare_data(csv_path: str) -> pd.DataFrame:
 
     # Flatten column names
     aggregated_results.columns = [
-        'k', 'distance_metric', 'weighting_method', 'voting_policy',
+        'k', 'distance_metric', 'weighting_method', 'voting_policy', 'reduction_method',
         'mean_accuracy', 'std_accuracy', 'mean_time',
         'mean_f1', 'std_f1'
     ]
 
-    return detailed_results, aggregated_results
+    return results, aggregated_results
 
 
 def create_plots_folder(base_path: str):
@@ -145,8 +145,14 @@ def statistical_analysis(results: pd.DataFrame):
     print(
         f"Best voting policy: {best_vote} (accuracy: {vote_stats.loc[best_vote, 'mean']:.4f} ± {vote_stats.loc[best_vote, 'std']:.4f})")
 
+    # Best reduction method
+    reduction_stats = results.groupby('reduction_method')['mean_accuracy'].agg(['mean', 'std']).round(4)
+    best_reduction = reduction_stats['mean'].idxmax()
+    print(
+        f"Best reduction method: {best_reduction} (accuracy: {reduction_stats.loc[best_reduction, 'mean']:.4f} ± {reduction_stats.loc[best_reduction, 'std']:.4f})")
 
-def create_additional_plots(detailed_results: pd.DataFrame, aggregated_results: pd.DataFrame, plots_path: str):
+
+def create_additional_plots(results: pd.DataFrame, aggregated_results: pd.DataFrame, plots_path: str):
     """
     Create additional insightful plots
     """
@@ -180,13 +186,13 @@ def main():
     create_plots_folder(plots_path)
 
     # Load and prepare data
-    detailed_results, aggregated_results = load_and_prepare_data(csv_path)
+    results, aggregated_results = load_and_prepare_data(csv_path)
 
     # Generate all plots
     plot_k_vs_accuracy(aggregated_results, plots_path)
     plot_heatmap(aggregated_results, plots_path)
     plot_weighting_boxplot(aggregated_results, plots_path)
-    create_additional_plots(detailed_results, aggregated_results, plots_path)
+    create_additional_plots(results, aggregated_results, plots_path)
 
     # Print analyses to console
     analyze_top_configurations(aggregated_results)
