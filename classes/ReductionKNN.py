@@ -148,10 +148,10 @@ class ReductionKNN:
         # Compute minimum distance row-by-row
         for i in range(len(features)):
             # Calculate distance only for the current row
-            distances = np.linalg.norm(features[i] - features, axis=1)
+            distances = np.linalg.norm(features.iloc[i] - features, axis=1)
 
             # Mask distances where labels are the same
-            mask = labels != labels[i]
+            mask = labels != labels.iloc[i]
             filtered_distances = distances[mask]
 
             # Update delta_n if a smaller valid distance is found
