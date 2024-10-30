@@ -120,7 +120,7 @@ def find_top_two(results_f):
 
 def total_analysis(kernel_def_f, c_value_def_f,dataset_path_ff):
     # Add reduction methods (None means original dataset)
-    reduction_methods_f = [None, 'EENTH', 'GCNN', 'DROP3']
+    reduction_methods_f = [None, 'EENTH', 'GCNN']#, 'DROP3']
     metrics = []
 
     print(f"Testing configurations across 10 folds with different reduction methods.")

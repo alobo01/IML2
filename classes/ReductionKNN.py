@@ -233,7 +233,7 @@ class ReductionKNN:
         # Calcular distancia a todos los enemigos entre los puntos restantes
         # Para cada punto x conseguir vecinos v_i \in N(x) -> N(v_i) union {x}
         # Conservamos x si clasificacion de todos los v_i es mejor con el punto x o sin el
-        # 
+        #
 
         # First step, apply a single ENN pass to remove noisy points
         enn_removed_indices = self.fast_enn(features, labels)
@@ -423,15 +423,15 @@ class ReductionKNN:
 
     def repeated_edited_nearest_neighbor(self, features: DataFrame, labels: DataFrame, k=3):
         """
-        Repeated Edited Nearest Neighbor (RENN) applies the ENN algorithm iteratively until all instances 
+        Repeated Edited Nearest Neighbor (RENN) applies the ENN algorithm iteratively until all instances
         remaining have a majority of their k nearest neighbors with the same class.
         ENN, typically with k=3 we will remove a point x_0 if all neighbours x_i in NN(x_0,k) don't have consensus
         on the elected class
 
         Citation:
-        Wilson, D. L. (1972). Asymptotic Properties of Nearest Neighbor Rules Using Edited Data. 
+        Wilson, D. L. (1972). Asymptotic Properties of Nearest Neighbor Rules Using Edited Data.
         IEEE Transactions on Systems, Man, and Cybernetics, SMC-2(3), 408-421.
-        As cited in: Wilson, D. R., & Martinez, T. R. (2000). Reduction techniques for instance-based learning algorithms. 
+        As cited in: Wilson, D. R., & Martinez, T. R. (2000). Reduction techniques for instance-based learning algorithms.
         Machine learning, 38(3), 257-286.
 
         Args:
@@ -462,13 +462,13 @@ class ReductionKNN:
 
     def ib2(self, features: DataFrame, labels: DataFrame):
         """
-        The IB2 algorithm is incremental: it starts with S initially empty, and each 
+        The IB2 algorithm is incremental: it starts with S initially empty, and each
         instance in T is added to S if it is not classified correctly by the instances already in S.
 
         Citation:
-        Aha, D. W., Kibler, D., & Albert, M. K. (1991). Instance-based learning algorithms. 
+        Aha, D. W., Kibler, D., & Albert, M. K. (1991). Instance-based learning algorithms.
         Machine learning, 6(1), 37-66.
-        As cited in: Wilson, D. R., & Martinez, T. R. (2000). Reduction techniques for instance-based learning algorithms. 
+        As cited in: Wilson, D. R., & Martinez, T. R. (2000). Reduction techniques for instance-based learning algorithms.
         Machine learning, 38(3), 257-286.
 
         Args:

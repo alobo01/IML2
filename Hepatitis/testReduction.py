@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 from sklearn.metrics import (
-    accuracy_score, roc_auc_score, recall_score, precision_score, f1_score, 
+    accuracy_score, roc_auc_score, recall_score, precision_score, f1_score,
     confusion_matrix
 )
 import pickle
@@ -18,7 +18,8 @@ def load_fold_data(fold_number, dataset_path):
     train_file = os.path.join(dataset_path, f'hepatitis.fold.{fold_number:06d}.train.arff')
     test_file = os.path.join(dataset_path, f'hepatitis.fold.{fold_number:06d}.test.arff')
 
-    loaded_preprocessor = DataPreprocessor().load(f'preprocessor_instances/hepatitis.fold.{fold_number:06d}.preprocessor.joblib')
+    loaded_preprocessor = DataPreprocessor().load(
+        f'preprocessor_instances/hepatitis.fold.{fold_number:06d}.preprocessor.joblib')
     train_data_preprocessed = loaded_preprocessor.transform(DataPreprocessor.load_arff(train_file))
     test_data_preprocessed = loaded_preprocessor.transform(DataPreprocessor.load_arff(test_file))
 
@@ -70,12 +71,10 @@ def process_fold(fold_number, dataset_path, method):
         train_features_reduced = reduced_data.drop('Class', axis=1)
         train_labels_reduced = reduced_data['Class']
         reduction_percentage = 100 * (len(train_labels_reduced) / len(train_labels))
-    
-    
-    
+
     # Fit the model and evaluate it
-    #ogKNN.fit(train_features_reduced, train_labels_reduced)
-    #metrics = evaluate_model(ogKNN, test_features, test_labels)
+    # ogKNN.fit(train_features_reduced, train_labels_reduced)
+    # metrics = evaluate_model(ogKNN, test_features, test_labels)
     metrics = {}
     metrics['reduction_percentage'] = reduction_percentage
     metrics['reduction_time'] = reduction_time
@@ -86,7 +85,7 @@ def process_fold(fold_number, dataset_path, method):
 # Main function to process all folds
 def main(dataset_path):
     # Reduction methods to compare
-    reduction_methods = ['DROP3', 'None', 'GCNN', 'EENTH']
+    reduction_methods = [ 'None', 'GCNN', 'EENTH']
     n_folds = 10
 
     # Initialize result storage
@@ -108,12 +107,8 @@ def main(dataset_path):
             fold_metrics = []
             for future in futures:
                 fold_number, metrics = future.result()
-                results[(fold_number,method)] = metrics
+                results[(fold_number, method)] = metrics
                 print(f"Completed fold {fold_number} for method {method}")
-
-
-
-
 
     filename = 'knn_reduction_comparison_results'
     # Save results to a pickle file
