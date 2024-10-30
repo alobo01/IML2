@@ -1,15 +1,11 @@
 import pandas as pd
 import numpy as np
 from classes.KNN import KNNAlgorithm, apply_weighting_method
-from classes.Reader import DataPreprocessor
-import itertools
 from typing import Dict, List, Tuple, Optional
-import matplotlib.pyplot as plt
-import seaborn as sns
-from tqdm import tqdm
-import os
 import time
 from sklearn.metrics import f1_score
+from tqdm import tqdm
+import os
 
 
 def load_fold_data(fold_number: int, dataset_path: str, reduction_method: Optional[str] = None) -> Tuple[
@@ -25,18 +21,13 @@ def load_fold_data(fold_number: int, dataset_path: str, reduction_method: Option
     Returns:
         Tuple of (train_features, train_labels, test_features, test_labels)
     """
-    
     if reduction_method:
-        # Path for reduced datasets
         train_path = os.path.join(dataset_path, 'ReducedFolds')
         train_file = os.path.join(train_path, f'hepatitis.fold.{fold_number:06d}.train.{reduction_method}.csv')
-
     else:
-        # Path for normal datasets
         train_path = os.path.join(dataset_path, 'preprocessed_csvs')
         train_file = os.path.join(train_path, f'hepatitis.fold.{fold_number:06d}.train.csv')
 
-    # Load reduced CSV files
     train_data = pd.read_csv(train_file)
     train_data = train_data.drop('Unnamed: 0', axis=1)
 
@@ -44,7 +35,6 @@ def load_fold_data(fold_number: int, dataset_path: str, reduction_method: Option
     test_data = pd.read_csv(test_file)
     test_data = test_data.drop('Unnamed: 0', axis=1)
 
-    # Split features and labels
     train_features = train_data.drop('Class', axis=1)
     train_labels = train_data['Class']
     test_features = test_data.drop('Class', axis=1)
@@ -93,73 +83,62 @@ def get_weighted_features(train_features: pd.DataFrame,
     return weighted_train, test_features
 
 
-def run_experiments(dataset_path: str):
-    config_space = {
-        'k': [1, 3, 5, 7],
-        'distance_metric': ['euclidean_distance', 'manhattan_distance', 'clark_distance'],
-        'weighting_method': ['equal_weight', 'information_gain_weight', 'reliefF_weight'],
-        'voting_policy': ['majority_class', 'inverse_distance_weighted', 'shepard']
-    }
+def run_reduction_experiments(dataset_path: str, knn_config: Dict):
+    """
+    Run experiments for a specific KNN configuration with different reduction techniques
 
-    # Add reduction methods (None means original dataset)
+    Args:
+        dataset_path: Path to the dataset
+        knn_config: Dictionary containing KNN configuration (k, distance_metric, weighting_method, voting_policy)
+    """
     reduction_methods = [None, 'EENTH', 'GCNN', 'DROP3']
-
     results = []
 
-    print(f"Testing configurations across 10 folds with different reduction methods...")
+    print(f"Testing reduction methods across 10 folds...")
     for reduction_method in reduction_methods:
         reduction_desc = reduction_method if reduction_method else "None"
 
-        for fold in tqdm(range(10), desc=f"Folds ({reduction_desc})"):
+        for fold in tqdm(range(10), desc=f"Processing fold ({reduction_desc})"):
             train_features, train_labels, test_features, test_labels = load_fold_data(
                 fold, dataset_path, reduction_method
             )
 
-            for weighting_method in config_space['weighting_method']:
-                for k in config_space['k']:
-                    weighted_train, weighted_test = get_weighted_features(
-                        train_features, train_labels, test_features, weighting_method, k
-                    )
+            weighted_train, weighted_test = get_weighted_features(
+                train_features, train_labels, test_features,
+                knn_config['weighting_method'], knn_config['k']
+            )
 
-                    for distance_metric, voting_policy in itertools.product(
-                            config_space['distance_metric'],
-                            config_space['voting_policy']
-                    ):
-                        config = {
-                            'k': k,
-                            'distance_metric': distance_metric,
-                            'weighting_method': weighting_method,
-                            'voting_policy': voting_policy
-                        }
+            accuracy, train_time, f1 = evaluate_knn_configuration(
+                weighted_train, train_labels,
+                weighted_test, test_labels,
+                knn_config
+            )
 
-                        accuracy, train_time, f1 = evaluate_knn_configuration(
-                            weighted_train, train_labels,
-                            weighted_test, test_labels,
-                            config
-                        )
+            reduction_suffix = f"{reduction_method}" if reduction_method else "NONE"
+            model_name = (f"KNN, {knn_config['k']}, {knn_config['distance_metric']}, "
+                          f"{knn_config['weighting_method']}, {knn_config['voting_policy']}, {reduction_suffix}")
 
-                        # Add reduction method to model name
-                        reduction_suffix = f"{reduction_method}" if reduction_method else "NONE"
-                        model_name = f"KNN, {k}, {distance_metric}, {weighting_method}, {voting_policy}, {reduction_suffix}"
-
-                        results.append({
-                            'Model': model_name,
-                            'Dataset/Fold': f"Hepatitis/{fold}",
-                            'Reduction': reduction_desc,
-                            'Accuracy': accuracy,
-                            'Time': train_time,
-                            'F1': f1
-                        })
+            results.append({
+                'Model': model_name,
+                'Dataset/Fold': f"Hepatitis/{fold}",
+                'Accuracy': accuracy,
+                'Time': train_time,
+                'F1': f1
+            })
 
     return pd.DataFrame(results)
 
 
 if __name__ == "__main__":
-    # Set the dataset path
     dataset_path = '..\\Hepatitis'
 
-    # Run experiments
-    results = run_experiments(dataset_path)
+    # Define a specific KNN configuration to test with reduction methods
+    knn_config = {
+        'k': 7,
+        'distance_metric': 'manhattan_distance',
+        'weighting_method': 'equal_weight',
+        'voting_policy': 'majority_class'
+    }
 
-    # Save detailed results with the requested format
-    results.to_csv('knn_hepatitis_results.csv', index=False)
+    results = run_reduction_experiments(dataset_path, knn_config)
+    results.to_csv('knn_reduction_results.csv', index=False)
