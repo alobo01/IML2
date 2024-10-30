@@ -1,7 +1,9 @@
 ### Team
 
-Antonio Lobo Santos
-Pedro Agundez Fernandez
+- Antonio Lobo Santos
+- Pedro Agúndez Fernandez
+- Bruno Sánchez Gómez
+- María del Carmen Ramírez Trujillo
 
 
 ### Running script for the first time

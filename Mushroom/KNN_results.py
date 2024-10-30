@@ -29,26 +29,26 @@ def load_fold_data(fold_number: int, dataset_path: str, reduction_method: Option
     if reduction_method:
         # Path for reduced datasets
         train_path = os.path.join(dataset_path, 'ReducedFolds')
-        train_file = os.path.join(train_path, f'hepatitis.fold.{fold_number:06d}.train.{reduction_method}.csv')
+        train_file = os.path.join(train_path, f'mushroom.fold.{fold_number:06d}.train.{reduction_method}.csv')
 
     else:
         # Path for normal datasets
         train_path = os.path.join(dataset_path, 'preprocessed_csvs')
-        train_file = os.path.join(train_path, f'hepatitis.fold.{fold_number:06d}.train.csv')
+        train_file = os.path.join(train_path, f'mushroom.fold.{fold_number:06d}.train.csv')
 
     # Load reduced CSV files
     train_data = pd.read_csv(train_file)
     train_data = train_data.drop('Unnamed: 0', axis=1)
 
-    test_file = os.path.join(dataset_path, 'preprocessed_csvs', f'hepatitis.fold.{fold_number:06d}.test.csv')
+    test_file = os.path.join(dataset_path, 'preprocessed_csvs', f'mushroom.fold.{fold_number:06d}.test.csv')
     test_data = pd.read_csv(test_file)
     test_data = test_data.drop('Unnamed: 0', axis=1)
 
     # Split features and labels
-    train_features = train_data.drop('Class', axis=1)
-    train_labels = train_data['Class']
-    test_features = test_data.drop('Class', axis=1)
-    test_labels = test_data['Class']
+    train_features = train_data.drop('class', axis=1)
+    train_labels = train_data['class']
+    test_features = test_data.drop('class', axis=1)
+    test_labels = test_data['class']
 
     return train_features, train_labels, test_features, test_labels
 
@@ -102,7 +102,7 @@ def run_experiments(dataset_path: str):
     }
 
     # Add reduction methods (None means original dataset)
-    reduction_methods = [None, 'EENTH', 'GCNN', 'DROP3']
+    reduction_methods = [None]#, 'EENTH', 'GCNN', 'DROP3']
 
     results = []
 
@@ -144,7 +144,7 @@ def run_experiments(dataset_path: str):
 
                         results.append({
                             'Model': model_name,
-                            'Dataset/Fold': f"Hepatitis/{fold}",
+                            'Dataset/Fold': f"Mushroom/{fold}",
                             'Reduction': reduction_desc,
                             'Accuracy': accuracy,
                             'Time': train_time,
@@ -156,10 +156,10 @@ def run_experiments(dataset_path: str):
 
 if __name__ == "__main__":
     # Set the dataset path
-    dataset_path = '..\\Hepatitis'
+    dataset_path = '..\\Mushroom'
 
     # Run experiments
     results = run_experiments(dataset_path)
 
     # Save detailed results with the requested format
-    results.to_csv('knn_hepatitis_results.csv', index=False)
+    results.to_csv('knn_mushroom_results.csv', index=False)
