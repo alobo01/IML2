@@ -76,7 +76,7 @@ def main():
 
     # Initialize original
     ogKNN = KNNAlgorithm(k=3)
-    ogKNN.fit(train_data, train_data['Label'])
+    ogKNN.fit(train_data.drop(['Label'], axis=1), train_data['Label'])
 
     # Initialize the ReductionKNN object
     reduction_knn = ReductionKNN(ogKNN,KNNAlgorithm(k=3))

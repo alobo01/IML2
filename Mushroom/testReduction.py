@@ -18,7 +18,7 @@ def load_fold_data(fold_number, dataset_path):
     train_file = os.path.join(dataset_path, f'mushroom.fold.{fold_number:06d}.train.arff')
     test_file = os.path.join(dataset_path, f'mushroom.fold.{fold_number:06d}.test.arff')
 
-    loaded_preprocessor = DataPreprocessor().load("mushroom_preprocessor.joblib")
+    loaded_preprocessor = DataPreprocessor().load(f'preprocessor_instances/mushroom.fold.{fold_number:06d}.preprocessor.joblib')
     train_data_preprocessed = loaded_preprocessor.transform(DataPreprocessor.load_arff(train_file))
     test_data_preprocessed = loaded_preprocessor.transform(DataPreprocessor.load_arff(test_file))
 
@@ -86,7 +86,7 @@ def process_fold(fold_number, dataset_path, method):
 # Main function to process all folds
 def main(dataset_path):
     # Reduction methods to compare
-    reduction_methods = ['None', 'GCNN', 'EENTH', 'DROP3']
+    reduction_methods = ['DROP3', 'None', 'GCNN', 'EENTH']
     n_folds = 10
 
     # Initialize result storage
