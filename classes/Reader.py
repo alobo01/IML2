@@ -1,7 +1,7 @@
 import pandas as pd
 from scipy.io.arff import loadarff
 from sklearn.impute import SimpleImputer
-from sklearn.preprocessing import LabelEncoder, OneHotEncoder, TargetEncoder, MinMaxScaler, RobustScaler
+from sklearn.preprocessing import LabelEncoder, OrdinalEncoder, TargetEncoder, MinMaxScaler
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 import numpy as np
@@ -12,11 +12,21 @@ import os
 class DataPreprocessor:
     """
     A class for preprocessing data with support for ARFF files, handling both numerical and categorical features.
-    Supports OneHotEncoder and TargetEncoder for categorical features, with class column always using LabelEncoder.
-    Supports different scaling options for numerical features: None, MinMax, or RobustScaler.
+    Applies OrdinalEncoder to specified ordinal features, TargetEncoder to other categorical features,
+    and MinMaxScaler to numerical features.
     """
 
     def __init__(self, data=None, class_column='class'):
+        """
+        Initialize the DataPreprocessor instance.
+
+        Parameters:
+        -----------
+        data : pandas.DataFrame or str, optional
+            Data to be preprocessed. Can be a DataFrame or a path to an ARFF file.
+        class_column : str, default='class'
+            The name of the target class column if present in the dataset.
+        """
         self.preprocessor = None
         self.data = None
         self.feature_names_ = []
@@ -37,29 +47,23 @@ class DataPreprocessor:
             except Exception as e:
                 raise Exception(f"Error loading ARFF file: {str(e)}")
 
-    def fit(self, data=None, cat_encoding='binary', num_scaling=None):
+    def fit(self, data=None, ordinal_features=None):
         """
         Fit the preprocessor to the data.
 
         Parameters:
         -----------
         data : pandas.DataFrame, optional
-            The input data to fit on. If None, uses the data provided during initialization.
-        cat_encoding : str, optional (default='binary')
-            The encoding method for categorical variables. Options: 'binary', 'target'
-        num_scaling : str, optional (default=None)
-            The scaling method for numerical variables. Options: None, 'minmax', 'robust'
+            The input data to fit on. Uses the data provided during initialization if None.
+        ordinal_features : list of str, optional
+            List of categorical features to encode using OrdinalEncoder.
         """
+        if ordinal_features is None:
+            ordinal_features = []
         if data is None:
             if self.data is None:
                 raise ValueError("No data provided. Either pass data to fit() or initialize with data.")
             data = self.data.copy()
-
-        if cat_encoding not in ['binary', 'target']:
-            raise ValueError("cat_encoding must be 'binary' or 'target'")
-
-        if num_scaling not in [None, 'minmax', 'robust']:
-            raise ValueError("num_scaling must be None, 'minmax', or 'robust'")
 
         self.has_class = self.class_column in data.columns
         if self.has_class:
@@ -71,37 +75,37 @@ class DataPreprocessor:
         self.numeric_cols = list(data.select_dtypes(include=['number']).columns)
 
         transformers = []
+        non_ordinal_features = [col for col in self.categorical_cols if col not in ordinal_features]
 
         if self.categorical_cols:
-            if cat_encoding == 'binary':
-                cat_steps = [
+            if ordinal_features:
+                ordinal_steps = [
                     ('imputer', SimpleImputer(strategy='most_frequent')),
-                    ('onehot_encoder', OneHotEncoder(drop='if_binary'))
+                    ('ordinal_encoder', OrdinalEncoder())
                 ]
-            else:
+                transformers.append(('ordinal', Pipeline(ordinal_steps), ordinal_features))
+                self.feature_names_.extend(ordinal_features)
+
+            if non_ordinal_features:
                 if not self.has_class:
                     raise ValueError("Target encoding requires a class column.")
-                cat_steps = [
+                target_steps = [
                     ('imputer', SimpleImputer(strategy='most_frequent')),
                     ('target_encoder', TargetEncoder())
                 ]
-
-            transformers.append(('cat', Pipeline(steps=cat_steps), self.categorical_cols))
-            self.feature_names_.extend(self.categorical_cols)
+                transformers.append(('target', Pipeline(target_steps), non_ordinal_features))
+                self.feature_names_.extend(non_ordinal_features)
 
         if self.numeric_cols:
-            num_steps = [('imputer', SimpleImputer(strategy='median'))]
-
-            if num_scaling == 'minmax':
-                num_steps.append(('scaler', MinMaxScaler()))
-            elif num_scaling == 'robust':
-                num_steps.append(('scaler', RobustScaler()))
-
-            transformers.append(('num', Pipeline(steps=num_steps), self.numeric_cols))
+            numeric_steps = [
+                ('imputer', SimpleImputer(strategy='median')),
+                ('scaler', MinMaxScaler())
+            ]
+            transformers.append(('numeric', Pipeline(numeric_steps), self.numeric_cols))
             self.feature_names_.extend(self.numeric_cols)
 
         self.preprocessor = ColumnTransformer(transformers=transformers)
-        self.preprocessor.fit(data, y=self.class_data if cat_encoding == 'target' else None)
+        self.preprocessor.fit(data, y=self.class_data if non_ordinal_features else None)
 
     def transform(self, data=None):
         """
@@ -118,14 +122,14 @@ class DataPreprocessor:
         Returns:
         --------
         pandas.DataFrame
-            The transformed data
+            The transformed data.
 
         Raises:
         -------
         ValueError
-            If the preprocessor is not fitted or if the input format is invalid
+            If the preprocessor is not fitted or if the input format is invalid.
         FileNotFoundError
-            If the provided file path does not exist
+            If the provided file path does not exist.
         """
         if self.preprocessor is None:
             raise ValueError("Preprocessor not fitted. Call fit() first.")
@@ -176,10 +180,12 @@ class DataPreprocessor:
         return result_df
 
     def fit_transform(self, data=None, **kwargs):
+        """Fit and transform data in one step."""
         self.fit(data, **kwargs)
         return self.transform(data)
 
     def save(self, filepath):
+        """Save the fitted preprocessor to a file."""
         if self.preprocessor is None:
             raise ValueError("Preprocessor not fitted. Nothing to save.")
 
@@ -196,6 +202,7 @@ class DataPreprocessor:
 
     @classmethod
     def load(cls, filepath):
+        """Load a saved preprocessor from a file."""
         if not os.path.exists(filepath):
             raise FileNotFoundError(f"The file {filepath} was not found.")
 
@@ -214,6 +221,7 @@ class DataPreprocessor:
 
     @staticmethod
     def load_arff(file_path):
+        """Load an ARFF file and return it as a DataFrame."""
         data, _ = loadarff(file_path)
         df = pd.DataFrame(data)
         for column in df.select_dtypes([object]).columns:
@@ -223,11 +231,13 @@ class DataPreprocessor:
 
     @staticmethod
     def get_whole_dataset_as_df(path1, path2):
+        """Load and concatenate training and test datasets from ARFF files."""
         test_data = DataPreprocessor.load_arff(path1)
         train_data = DataPreprocessor.load_arff(path2)
         return pd.concat([train_data, test_data], ignore_index=True)
 
     @staticmethod
     def get_columns_with_missing_values_over_threshold(data, threshold=0.4):
+        """Identify columns with missing values above a specified threshold."""
         missing_percentage = data.isnull().mean()
-        return missing_percentage[missing_percentage > 0.4].index
+        return missing_percentage[missing_percentage > threshold].index

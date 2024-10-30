@@ -5,6 +5,22 @@ complete_df = DataPreprocessor.get_whole_dataset_as_df(
     "../datasets/hepatitis/hepatitis.fold.000000.test.arff",
 )
 
+binary_features  = [
+    "SEX",
+    "STEROID",
+    "ANTIVIRALS",
+    "FATIGUE",
+    "MALAISE",
+    "ANOREXIA",
+    "LIVER_BIG",
+    "LIVER_FIRM",
+    "SPLEEN_PALPABLE",
+    "SPIDERS",
+    "ASCITES",
+    "VARICES",
+    "HISTOLOGY"
+]
+
 removed_features = DataPreprocessor.get_columns_with_missing_values_over_threshold(complete_df)
 
 for i in range(10):
@@ -21,7 +37,7 @@ for i in range(10):
 
     # Initialize and fit the preprocessor on the training data and transform
     reader = DataPreprocessor(train_data, class_column="Class")
-    train_data_preprocessed = reader.fit_transform(cat_encoding="binary", num_scaling="minmax")
+    train_data_preprocessed = reader.fit_transform(ordinal_features=binary_features)
 
     # Save the preprocessor for this fold
     preprocessor_save_path = f"preprocessor_instances/hepatitis.fold.{fold_str}.preprocessor.joblib"
