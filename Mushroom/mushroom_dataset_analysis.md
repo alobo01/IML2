@@ -1,12 +1,17 @@
 # Mushroom Poison Classification
 
 ## Introduction
-Mushroom foraging has gained popularity in recent years, yet it comes with the significant risk of accidental poisoning. Identifying which mushrooms are edible and which are toxic is crucial for both enthusiasts and researchers. Machine learning models can aid in mushroom classification based on physical characteristics, helping predict the likelihood of toxicity based on specific features. Research shows that some species possess subtle indicators that suggest toxicity, such as odor and cap color, which can be used in classification tasks to guide safer foraging practices ([Largent et al., 1977](https://www.jstor.org/stable/3799781)).
 
-This document describes the attributes of a dataset used to predict the edibility of mushrooms, helping researchers and models recognize poisonous species based on observable characteristics.
+Mushroom foraging can be risky due to the challenge of distinguishing between edible and poisonous species, especially 
+as physical characteristics alone may not always make toxicity obvious. To address this, machine learning models have 
+been applied to mushroom classification tasks, leveraging attributes such as odor, cap color, and gill characteristics 
+to predict toxicity more reliably. Recent research has shown that models trained on these specific characteristics can 
+significantly enhance classification accuracy, making mushroom identification safer and more accessible 
+for both researchers and foragers ([Tutuncu et al., 2022](https://doi.org/10.1109/MECO55406.2022.9797212)).
 
-## Dataset Attributes
-Below is a breakdown of each attribute in the dataset and the values it may take. These attributes capture physical characteristics or environmental indicators that correlate with mushroom toxicity.
+## Dataset Features
+Below is a breakdown of each feature in the dataset and the values it may take. These attributes capture physical 
+characteristics or environmental indicators that can correlate with mushroom toxicity.
 
 1. **cap-shape**: Refers to the shape of the mushroom's cap.
    - Values: bell (`b`), conical (`c`), convex (`x`), flat (`f`), knobbed (`k`), sunken (`s`)
@@ -76,3 +81,116 @@ Below is a breakdown of each attribute in the dataset and the values it may take
 
 23. **class**: Classification of the mushroom as edible or poisonous.
     - Values: edible (`e`), poisonous (`p`)
+
+## Descriptive Statistics of the dataset
+
+# Class Distribution
+
+For this dataset, both classes have a similar number of elements, making it balanced:
+
+| class   |   Count |
+|---------|---------|
+| e       |    4208 |
+| p       |    3916 |
+
+**Types of features**:
+
+| Ordinal         | Nominal                  | Binary      |
+|-------------------------|--------------------------|---------------------|
+| gill-spacing            | cap-shape                | bruises?           |
+| ring-number             | cap-surface              | gill-size          |
+| population              | cap-color                | stalk-shape        |
+|                         | odor                     |                     |
+|                         | gill-attachment          |                     |
+|                         | gill-color               |                     |
+|                         | stalk-root               |                     |
+|                         | stalk-surface-above-ring |                     |
+|                         | stalk-surface-below-ring |                     |
+|                         | stalk-color-above-ring   |                     |
+|                         | stalk-color-below-ring   |                     |
+|                         | veil-type                |                     |
+|                         | veil-color               |                     |
+|                         | ring-type                |                     |
+|                         | spore-print-color        |                     |
+|                         | habitat                  |                     |
+
+Most of the features are nominal, however there are also ordinal and binary features, 
+this information is useful to decide which encoder to use (see in preprocessing section).
+
+The dataset contains 8,124 samples, here is the pandas description of the numerical columns of the dataset, 
+and below are the missing values count:
+
+|                | count | unique | top | freq |
+|----------------|-------|--------|-----|------|
+| cap-shape      | 8124  | 6      | x   | 3656 |
+| cap-surface    | 8124  | 4      | y   | 3244 |
+| cap-color      | 8124  | 10     | n   | 2284 |
+| bruises?       | 8124  | 2      | f   | 4748 |
+| odor           | 8124  | 9      | n   | 3528 |
+| gill-attachment | 8124  | 2      | f   | 7914 |
+| gill-spacing   | 8124  | 2      | c   | 6812 |
+| gill-size      | 8124  | 2      | b   | 5612 |
+| gill-color     | 8124  | 12     | b   | 1728 |
+| stalk-shape    | 8124  | 2      | t   | 4608 |
+| stalk-root     | 5644  | 4      | b   | 3776 |
+| stalk-surface-above-ring | 8124 | 4  | s   | 5176 |
+| stalk-surface-below-ring  | 8124 | 4  | s   | 4936 |
+| stalk-color-above-ring | 8124 | 9   | w   | 4464 |
+| stalk-color-below-ring | 8124 | 9   | w   | 4384 |
+| veil-type      | 8124  | 1      | p   | 8124 |
+| veil-color     | 8124  | 4      | w   | 7924 |
+| ring-number    | 8124  | 3      | o   | 7488 |
+| ring-type      | 8124  | 5      | p   | 3968 |
+| spore-print-color | 8124 | 9    | w   | 2388 |
+| population      | 8124 | 6      | v   | 4040 |
+| habitat        | 8124  | 7      | d   | 3148 |
+| class          | 8124  | 2      | e   | 4208 |
+
+
+### Missing Values Count
+
+This dataset contains only one column with missing values, "stalk-root", since 
+the proportion of missing values represents roughly a 30% of the total, we have decided to
+keep it, as the remaining 70% of samples are still numerous.
+
+|            |   Missing Values Count |
+|------------|------------------------|
+| stalk-root |                   2480 |
+
+
+## Feature distribution by class
+
+We generate plots to analyse how the classes (e and p) are distributed for all the features 
+in the dataset, each figure (saved in the plots_and_tables/feature_distributions folder) represents 
+the distribution normalized taking into account the class imbalance (left plot) and with the absolute
+values (right plot).
+
+Analyzing the figures we can see there are certain features that have a clear separation in the 
+classes, some examples are:
+
+### Odor
+
+Certain odors are specially significant, in particular a,c,m,p,s and y values, are completely class-separated:
+
+![SEX_distribution.png](plots_and_tables/feature_distributions/odor_distribution.png)
+
+
+### Spore print color
+
+Values b,o,r,u and y are completely class-separated, with the rest of the values being almost completely separated:
+
+![ALBUMIN_distribution.png](plots_and_tables/feature_distributions/spore-print-color_distribution.png)
+
+
+Although we are not performing feature selection, these observations help us understand how the 
+weighting applied in the KNN algorithm should be distributed throughout the features.
+
+## Preprocessing methods
+
+### For categorical features
+
+
+
+### For numerical features
+
+

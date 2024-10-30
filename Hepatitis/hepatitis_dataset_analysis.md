@@ -67,10 +67,11 @@ and below are the missing values count:
 
 ### Missing Values Count
 
-There are a few features with a good proportion of the data missing, in the case of the protime
-feature, almost half of the values are missing, in this case it is better to remove the feature,
-for the rest of features, we have used the median value for numerical features and the mode 
-for categorical features
+There are a few features with a big portion of the data missing, in the case of the protime
+feature, almost half of the values are missing, we have set a threshold of 30% for the missing values,
+for this dataset only the protime feature has been removed.
+For the rest of features, we have replaced with the median value for numerical features and the mode 
+for categorical features.
 
 |                 |   Missing Values Count |
 |-----------------|------------------------|
@@ -90,13 +91,11 @@ for categorical features
 | ALK_PHOSPHATE   |                     29 |
 | PROTIME         |                     67 |
 
-
-
 ## Feature distribution by class
 
 We generate plots to analyse how the classes (LIVE and DIE) are distributed for all the features 
 in the dataset, each figure (saved in the plots_and_tables/feature_distributions folder) represents 
-the distribution normalized taking into account the class imbalance (left plot) and with the absolute
+the distribution scaled taking into account the class imbalance (left plot) and with the absolute
 values (right plot).
 
 Analyzing the figures we can see there are certain features that have a clear separation in the 
@@ -120,8 +119,8 @@ This plot shows that all patients that died had an albumin value lower than 0.4:
 
 ### For categorical features
 
-Since all categorical features only have two types, they are encoded with ones and zeros using LabelEncoder
+Since all categorical features only have two types, they are encoded with ones and zeros using ordinalEncoder
 
 ### For numerical features
 
-Numerical features can be normalized using robustScaler or minMaxScaler
+Numerical features are scaled in the range 0,1 using minMaxScaler

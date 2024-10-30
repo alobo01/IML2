@@ -144,6 +144,110 @@ def create_performance_plots(results: pd.DataFrame, aggregated_results: pd.DataF
     plt.savefig(os.path.join(plots_path, 'f1_vs_accuracy.png'), bbox_inches='tight', dpi=300)
     plt.close()
 
+def create_pairplot(data: pd.DataFrame, plots_path: str):
+    """
+    Create a custom pairplot matrix for model hyperparameters showing:
+    - Diagonal: Histograms of accuracies per parameter value
+    - Lower triangle: Heatmaps of average accuracies
+    - Upper triangle: Heatmaps of average times
+
+    Labels are shown only once at the bottom and left of the matrix.
+    """
+    save_path = os.path.join(plots_path, 'hyperparameter_pairplot_matrix.png')
+
+    # Parameters to analyze
+    params = ['k', 'distance_metric', 'weighting_method', 'voting_policy']
+    n_params = len(params)
+
+    # Create figure
+    fig, axes = plt.subplots(n_params, n_params, figsize=(20, 20))
+    plt.subplots_adjust(hspace=0.3, wspace=0.3)
+
+    # Color maps
+    accuracy_cmap = 'YlOrRd'
+    time_cmap = 'YlGnBu'
+
+    data['Time'] = data['Time'].multiply(100)
+
+    # Process each pair of parameters
+    for i in range(n_params):
+        for j in range(n_params):
+            ax = axes[i, j]
+            param1 = params[i]
+            param2 = params[j]
+
+            # Only show labels on bottom and left edges of the matrix
+            if i == n_params - 1:  # Bottom row
+                ax.set_xlabel(param2)
+                xlabels = True
+            else:
+                ax.set_xlabel('')
+                ax.set_xticklabels([])
+                xlabels = False
+
+            if j == 0:  # Leftmost column
+                ax.set_ylabel(param1)
+                ylabels = True
+            else:
+                ax.set_ylabel('')
+                ax.set_yticklabels([])
+                ylabels = False
+
+            if i == j:  # Diagonal - Histograms
+                # Group all accuracy values by parameter value (without taking mean)
+                param_groups = data.groupby(param1)['Accuracy']
+
+                # Create color map for different parameter values
+                unique_values = data[param1].unique()
+                colors = plt.cm.Set3(np.linspace(0, 1, len(unique_values)))
+
+                # Plot histogram for each parameter value
+                for idx, (value, group) in enumerate(param_groups):
+                    ax.hist(group, alpha=0.7, color=colors[idx],
+                            label=f'{value}', bins=20)
+
+                ax.set_title(f'Accuracy Distribution by {param1}')
+                ax.set_xlabel('Accuracy')
+                ax.set_ylabel('Count')
+                ax.legend()
+
+            elif i < j:  # Upper triangle - Time heatmaps
+                pivot_data = data.pivot_table(
+                    values='Time',
+                    index=param1,
+                    columns=param2,
+                    aggfunc='mean'
+                )
+
+                sns.heatmap(pivot_data, ax=ax, xticklabels=xlabels, yticklabels=ylabels, cmap=time_cmap,
+                            annot=True, fmt='.2f', cbar=False)
+                ax.set_title(f'Average Time')
+
+            else:  # Lower triangle - Accuracy heatmaps
+                pivot_data = data.pivot_table(
+                    values='Accuracy',
+                    index=param1,
+                    columns=param2,
+                    aggfunc='mean'
+                )
+
+                sns.heatmap(pivot_data, ax=ax, xticklabels=xlabels, yticklabels=ylabels, cmap=accuracy_cmap,
+                            annot=True, fmt='.3f', cbar=False)
+                ax.set_title(f'Average Accuracy')
+
+            # Rotate x-axis labels for better readability
+            # Only apply rotation to bottom row
+            if i == n_params - 1:
+                ax.tick_params(axis='x', rotation=45)
+            ax.tick_params(axis='y', rotation=0)
+
+    plt.suptitle('Hyperparameter Relationships Matrix\nAccuracy and Time Analysis',
+                 fontsize=16, y=1.02)
+
+    # Save the plot
+    plt.savefig(save_path, bbox_inches='tight', dpi=300)
+    plt.close()
+
 
 def main():
     # Paths
@@ -160,6 +264,7 @@ def main():
     plot_k_vs_accuracy(aggregated_results, plots_path)
     plot_heatmap(aggregated_results, plots_path)
     create_performance_plots(results, aggregated_results, plots_path)
+    create_pairplot(results, plots_path)
 
     # Print analyses
     analyze_top_configurations(aggregated_results)

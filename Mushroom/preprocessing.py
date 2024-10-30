@@ -6,6 +6,16 @@ complete_df = DataPreprocessor.get_whole_dataset_as_df(
     "../datasets/mushroom/mushroom.fold.000000.test.arff",
 )
 
+# Binary features are considered ordinal for the preprocesser
+ordinal_features = [
+    "gill-spacing",
+    "ring-number",
+    "population",
+    "bruises?",
+    "gill-size",
+    "stalk-shape"
+]
+
 # Remove columns with missing values above a specified threshold
 removed_features = DataPreprocessor.get_columns_with_missing_values_over_threshold(complete_df)
 
@@ -23,7 +33,7 @@ for i in range(10):
 
     # Initialize and fit the preprocessor on the training data and transform
     reader = DataPreprocessor(train_data, class_column="class")
-    train_data_preprocessed = reader.fit_transform(cat_encoding="target", num_scaling="minmax")
+    train_data_preprocessed = reader.fit_transform(ordinal_features=ordinal_features)
 
     # Save the preprocessor for this fold
     preprocessor_save_path = f"preprocessor_instances/mushroom.fold.{fold_str}.preprocessor.joblib"
