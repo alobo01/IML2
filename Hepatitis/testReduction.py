@@ -86,7 +86,7 @@ def process_fold(fold_number, dataset_path, method):
 # Main function to process all folds
 def main(dataset_path):
     # Reduction methods to compare
-    reduction_methods = ['DROP3', 'None', 'GCNN', 'EENTH']
+    reduction_methods = [ 'DROP3','EENTH', 'None', 'GCNN']
     n_folds = 10
 
     # Initialize result storage
