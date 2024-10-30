@@ -222,7 +222,12 @@ class DataPreprocessor:
         return df
 
     @staticmethod
-    def get_whole_dataset_as_df(test_fold_path, train_fold_path):
-        test_data = DataPreprocessor.load_arff(test_fold_path)
-        train_data = DataPreprocessor.load_arff(train_fold_path)
+    def get_whole_dataset_as_df(path1, path2):
+        test_data = DataPreprocessor.load_arff(path1)
+        train_data = DataPreprocessor.load_arff(path2)
         return pd.concat([train_data, test_data], ignore_index=True)
+
+    @staticmethod
+    def get_columns_with_missing_values_over_threshold(data, threshold=0.4):
+        missing_percentage = data.isnull().mean()
+        return missing_percentage[missing_percentage > 0.4].index

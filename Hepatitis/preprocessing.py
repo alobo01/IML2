@@ -1,5 +1,12 @@
 from classes.Reader import DataPreprocessor
 
+complete_df = DataPreprocessor.get_whole_dataset_as_df(
+    "../datasets/hepatitis/hepatitis.fold.000000.train.arff",
+    "../datasets/hepatitis/hepatitis.fold.000000.test.arff",
+)
+
+removed_features = DataPreprocessor.get_columns_with_missing_values_over_threshold(complete_df)
+
 for i in range(10):
     # Format the fold index to match the filename
     fold_str = f"{i:06d}"
@@ -8,8 +15,12 @@ for i in range(10):
     train_file = f"../datasets/hepatitis/hepatitis.fold.{fold_str}.train.arff"
     test_file = f"../datasets/hepatitis/hepatitis.fold.{fold_str}.test.arff"
 
-    # Initialize and fit the preprocessor on the training data
-    reader = DataPreprocessor(DataPreprocessor.load_arff(train_file), class_column="Class")
+    # Load as Dataframes and remove columns with missing values
+    train_data = DataPreprocessor.load_arff(train_file).drop(columns=removed_features)
+    test_data = DataPreprocessor.load_arff(test_file).drop(columns=removed_features)
+
+    # Initialize and fit the preprocessor on the training data and transform
+    reader = DataPreprocessor(train_data, class_column="Class")
     train_data_preprocessed = reader.fit_transform(cat_encoding="binary", num_scaling="minmax")
 
     # Save the preprocessor for this fold
@@ -20,6 +31,5 @@ for i in range(10):
     train_data_preprocessed.to_csv(f"preprocessed_csvs/hepatitis.fold.{fold_str}.train.csv")
 
     # Preprocess and save test fold as csv
-    test_data = DataPreprocessor.load_arff(test_file)
     test_data_preprocessed = reader.transform(test_data)
     test_data_preprocessed.to_csv(f"preprocessed_csvs/hepatitis.fold.{fold_str}.test.csv")
