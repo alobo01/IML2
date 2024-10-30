@@ -217,7 +217,7 @@ class ReductionKNN:
 
         return [index for index in old_indices if index]
 
-    def drop3(self, features: pd.DataFrame, labels: pd.Series, n_neighbors: int = 3) -> list:
+    def drop3(self, features: pd.DataFrame, labels: pd.Series, k: int = 3) -> list:
         """
         DROP3 algorithm for selecting points to keep based on majority voting of their neighbors' neighbors.
 
@@ -229,168 +229,73 @@ class ReductionKNN:
         Returns:
         - list: The indices of the points in the original dataset that should be kept.
         """
-        # Eliminar ruido usando fast_enn
-        # Calcular distancia a todos los enemigos entre los puntos restantes
-        # Para cada punto x conseguir vecinos v_i \in N(x) -> N(v_i) union {x}
-        # Conservamos x si clasificacion de todos los v_i es mejor con el punto x o sin el
-        #
+
 
         # First step, apply a single ENN pass to remove noisy points
         enn_removed_indices = self.fast_enn(features, labels)
         features.drop(index=enn_removed_indices, inplace=True)
         labels.drop(index=enn_removed_indices, inplace=True)
 
-        # Save the original indices after ENN removal
-        original_indices = features.index.values
+        # Step 1: Retrieve neighbors for each sample using the custom KNN classç
+        self.reducedKNN.fit(features,labels)
+        results = self.reducedKNN.get_neighbors(features, custom_k=k + 1, return_distances=True)
 
-        # Reset indices for features and labels to create a continuous index
-        features.reset_index(drop=True, inplace=True)
-        labels.reset_index(drop=True, inplace=True)
+        # Prepare structures for neighbors, distances, and labels, excluding the point itself
+        all_neighbours, all_distances, all_labels = [], [], []
+        for (neighbours, distances), neighbours_labels in results:
+            all_neighbours.append(neighbours[1:])
 
-        # Convert to numpy arrays for faster processing
-        X = features.values
-        y = labels.values.ravel() if labels.values.ndim > 1 else labels.values
+        all_neighbours = np.array(all_neighbours)
 
-        n_samples = len(X)
+        # Track points to keep
+        keep_indices = np.ones(len(features), dtype=bool)
+        associates = {tuple(vector): [] for vector in features.values}
 
-        # Step 1: Fit self.reducedKNN and retrieve all neighbors and distances at once
-        self.reducedKNN.fit(features, labels)
-        results = self.reducedKNN.get_neighbors(features, custom_k=n_neighbors + 1, return_distances=True)
+        # Build associates list to store reverse neighbor relationships
+        for idx, neighbors in enumerate(all_neighbours):
+            for neighbor in neighbors:
+                associates[tuple(neighbor)].append(idx)
 
-        # Initialize arrays to store indices, distances, and neighbor labels
-        indices = np.zeros((n_samples, n_neighbors), dtype=int)
-        distances = np.zeros((n_samples, n_neighbors))
-        neighbor_labels = np.zeros((n_samples, n_neighbors), dtype=labels.dtype)
+        # Track unique class labels and their counts
+        unique_classes = np.unique(labels)
+        class_count = {class_label: np.sum(labels == class_label) for class_label in unique_classes}
 
-        for i, ((neighbours, dists), neighbours_labels) in enumerate(results):
-            # Exclude the point itself by slicing off the first neighbor
-            indices[i] = neighbours[1:].index
-            distances[i] = dists[1:]
-            neighbor_labels[i] = neighbours_labels[1:]
+        # DROP3 logic: Evaluate each sample to determine if it should be kept
+        for idx, (sample, label) in enumerate(zip(features.values, labels.values)):
 
-        # Calculate average distance to enemy points
-        enemy_distances = np.zeros(n_samples)
-        for i in range(n_samples):
-            current_label = y[i]
-            neighbor_indices = indices[i]
-            neighbor_distances = distances[i]
-            neighbor_labels_i = neighbor_labels[i]
 
-            # Find the indices where neighbor_labels_i != current_label
-            enemy_mask = (neighbor_labels_i != current_label)
+            associate_indices = associates[tuple(features.values[idx])]
+            y_assoc = labels.values[associate_indices]
+            if not associate_indices:
+                # Check if removing this point would leave any class without representation
+                if class_count[label] > 1:  # Ensure at least one node per class
+                    keep_indices[idx] = False
+                    class_count[label] -= 1  # Update class count after removal
+                continue
 
-            if np.any(enemy_mask):
-                enemy_dists = neighbor_distances[enemy_mask]
-                avg_enemy_dist = np.mean(enemy_dists)
-            else:
-                avg_enemy_dist = float('inf')
 
-            enemy_distances[i] = avg_enemy_dist
+            # With sample
+            self.reducedKNN.fit(features, labels)
+            y_pred_with = self.reducedKNN.predict(features.iloc[associate_indices])
+            correct_with = np.sum(y_pred_with == y_assoc)
 
-        # Sort the features based on the enemy distances
-        sort_indices = np.argsort(enemy_distances)
-        sorted_X = X[sort_indices]
-        sorted_y = y[sort_indices]
+            # Without sample
+            temp_keep = keep_indices.copy()
+            temp_keep[idx] = False
+            self.reducedKNN.fit(features.iloc[temp_keep], labels.iloc[temp_keep])
+            y_pred_without = self.reducedKNN.predict(features.iloc[associate_indices])
+            correct_without = np.sum(y_pred_without == y_assoc)
 
-        # Re-fit self.reducedKNN on the sorted data
-        sorted_features = pd.DataFrame(sorted_X, columns=features.columns)
-        sorted_labels = pd.Series(sorted_y)
-        self.reducedKNN.fit(sorted_features, sorted_labels)
+            # Decision: keep or drop based on prediction improvement and class representation
+            if correct_without >= correct_with and class_count[label] > 1:
+                keep_indices[idx] = False
+                class_count[label] -= 1
 
-        # Retrieve neighbors for the sorted data
-        results = self.reducedKNN.get_neighbors(sorted_features, custom_k=n_neighbors + 1, return_distances=False)
-
-        # Initialize neighbors_indices array
-        neighbors_indices = np.zeros((n_samples, n_neighbors), dtype=int)
-
-        for i, ((neighbours, _), _) in enumerate(results):
-            # Exclude the point itself
-            neighbors_indices[i] = neighbours[1:].index
-
-        # Initialize mask for remaining points
-        is_remaining = np.ones(n_samples, dtype=bool)
-
-        # Handle labels that might not start from 0
-        label_min = np.min(sorted_y)
-
-        # Main loop
-        while True:
-            to_remove = []
-
-            # Iterate through remaining points
-            remaining_idx = np.where(is_remaining)[0]
-
-            for idx in remaining_idx:
-                point_label = sorted_y[idx]
-                point_neighbors = neighbors_indices[idx]
-
-                # Exclude neighbors that have been removed
-                point_neighbors = point_neighbors[is_remaining[point_neighbors]]
-
-                count_with = 0
-                count_without = 0
-
-                for neighbor_idx in point_neighbors:
-                    neighbor_label = sorted_y[neighbor_idx]
-                    neighbor_neighbors = neighbors_indices[neighbor_idx]
-
-                    # Exclude neighbors that have been removed
-                    neighbor_neighbors = neighbor_neighbors[is_remaining[neighbor_neighbors]]
-
-                    # Get the labels of the neighbor's neighbors
-                    neighbors_neighbor_labels = sorted_y[neighbor_neighbors]
-
-                    # Shift labels for np.bincount
-                    neighbors_neighbor_labels_shifted = neighbors_neighbor_labels - label_min
-                    point_label_shifted = point_label - label_min
-                    neighbor_label_shifted = neighbor_label - label_min
-
-                    # Without including the original point
-                    without_point_labels_shifted = neighbors_neighbor_labels_shifted
-
-                    # With including the original point's label
-                    with_point_labels_shifted = np.append(neighbors_neighbor_labels_shifted, point_label_shifted)
-
-                    # Majority label among the neighbor's neighbors without the point
-                    if len(without_point_labels_shifted) > 0:
-                        counts = np.bincount(without_point_labels_shifted)
-                        without_point_majority_label_shifted = np.argmax(counts)
-                        without_point_majority_label = without_point_majority_label_shifted + label_min
-                    else:
-                        without_point_majority_label = -1  # Assign a label that won't match any real label
-
-                    # Majority label among the neighbor's neighbors with the point
-                    if len(with_point_labels_shifted) > 0:
-                        counts = np.bincount(with_point_labels_shifted)
-                        with_point_majority_label_shifted = np.argmax(counts)
-                        with_point_majority_label = with_point_majority_label_shifted + label_min
-                    else:
-                        with_point_majority_label = -1  # Assign a label that won't match any real label
-
-                    # If the class of the neighbor is classified correctly without the point
-                    if without_point_majority_label == neighbor_label:
-                        count_without += 1
-
-                    # If the class of the neighbor is classified correctly with the point
-                    if with_point_majority_label == neighbor_label:
-                        count_with += 1
-
-                if count_with <= count_without:
-                    to_remove.append(idx)
-
-            if not to_remove:
+            if np.sum(keep_indices) == k:
                 break
 
-            is_remaining[to_remove] = False
-
-        # Get indices of remaining points
-        remaining_indices = np.where(is_remaining)[0]
-
-        # Map back to the original indices
-        indices_to_keep = original_indices[sort_indices[remaining_indices]]
-
-        # Return the indices to keep as a list
-        return indices_to_keep.tolist()
+        # Return indices of retained samples
+        return features.index[keep_indices].tolist()
 
     def fast_enn(self, features: DataFrame, labels: DataFrame, k=3):
         # Step 1: Retrieve all neighbors and distances at once
@@ -423,15 +328,15 @@ class ReductionKNN:
 
     def repeated_edited_nearest_neighbor(self, features: DataFrame, labels: DataFrame, k=3):
         """
-        Repeated Edited Nearest Neighbor (RENN) applies the ENN algorithm iteratively until all instances
+        Repeated Edited Nearest Neighbor (RENN) applies the ENN algorithm iteratively until all instances 
         remaining have a majority of their k nearest neighbors with the same class.
         ENN, typically with k=3 we will remove a point x_0 if all neighbours x_i in NN(x_0,k) don't have consensus
         on the elected class
 
         Citation:
-        Wilson, D. L. (1972). Asymptotic Properties of Nearest Neighbor Rules Using Edited Data.
+        Wilson, D. L. (1972). Asymptotic Properties of Nearest Neighbor Rules Using Edited Data. 
         IEEE Transactions on Systems, Man, and Cybernetics, SMC-2(3), 408-421.
-        As cited in: Wilson, D. R., & Martinez, T. R. (2000). Reduction techniques for instance-based learning algorithms.
+        As cited in: Wilson, D. R., & Martinez, T. R. (2000). Reduction techniques for instance-based learning algorithms. 
         Machine learning, 38(3), 257-286.
 
         Args:
@@ -462,13 +367,13 @@ class ReductionKNN:
 
     def ib2(self, features: DataFrame, labels: DataFrame):
         """
-        The IB2 algorithm is incremental: it starts with S initially empty, and each
+        The IB2 algorithm is incremental: it starts with S initially empty, and each 
         instance in T is added to S if it is not classified correctly by the instances already in S.
 
         Citation:
-        Aha, D. W., Kibler, D., & Albert, M. K. (1991). Instance-based learning algorithms.
+        Aha, D. W., Kibler, D., & Albert, M. K. (1991). Instance-based learning algorithms. 
         Machine learning, 6(1), 37-66.
-        As cited in: Wilson, D. R., & Martinez, T. R. (2000). Reduction techniques for instance-based learning algorithms.
+        As cited in: Wilson, D. R., & Martinez, T. R. (2000). Reduction techniques for instance-based learning algorithms. 
         Machine learning, 38(3), 257-286.
 
         Args:
