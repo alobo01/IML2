@@ -42,7 +42,7 @@ def plot_reduction_accuracy_comparison(results: pd.DataFrame, plots_path: str):
     """Plot comparison of reduction methods' accuracies"""
     plt.figure(figsize=(10, 6))
     sns.boxplot(x='reduction', y='Accuracy', data=results)
-    plt.title('Accuracy Distribution by Reduction Method\nHepatitis Dataset')
+    plt.title('Accuracy Distribution by Reduction Method\nMushroom Dataset')
     plt.xlabel('Reduction Method')
     plt.ylabel('Accuracy')
     plt.xticks(rotation=45)
@@ -55,7 +55,7 @@ def plot_time_comparison(aggregated_results: pd.DataFrame, plots_path: str):
     """Plot time comparison across reduction methods"""
     plt.figure(figsize=(10, 6))
     sns.barplot(x='reduction', y='mean_time', data=aggregated_results)
-    plt.title('Average Execution Time by Reduction Method\nHepatitis Dataset')
+    plt.title('Average Execution Time by Reduction Method\nMushroom Dataset')
     plt.xlabel('Reduction Method')
     plt.ylabel('Mean Execution Time (seconds)')
     plt.xticks(rotation=45)
@@ -170,7 +170,7 @@ def main():
     # Paths
     csv_path = 'knn_reduction_results.csv'
     counts_path = 'knn_reduction_counts.csv'
-    plots_path = '..\\Hepatitis\\plots_and_tables\\knn_reduction_analysis'
+    plots_path = '..\\Mushroom\\plots_and_tables\\knn_reduction_analysis'
 
     # Create plots folder
     create_plots_folder(plots_path)
