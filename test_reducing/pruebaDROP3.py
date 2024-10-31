@@ -9,14 +9,19 @@ import pandas as pd
 #X, y = make_blobs(n_samples=300, centers=[[0, 0], [1, 1]], random_state=42, cluster_std=0.5)
 from sklearn.preprocessing import LabelEncoder
 
+from classes.KNN import KNNAlgorithm
+from classes.ReductionKNN import ReductionKNN
+
 label_encoder = LabelEncoder()
 
 # Load the ARFF file
 data, meta = arff.loadarff('grid.fold.000000.train.arff')
 df = pd.DataFrame(data)
+df["class"] = label_encoder.fit_transform(df["class"])
+features ,labels = df.drop("class",axis=1), df["class"]
 X, y = df.drop("class", axis=1).values, df["class"].values
 
-y = label_encoder.fit_transform(y)
+
 
 # Create a color dictionary from the colormap
 unique_classes = np.unique(y)
@@ -145,7 +150,16 @@ def drop3(data, k=5, show_plots=True):
 
 
 # Apply DROP3 with optional intermediate plots
-X_drop3, y_drop3 = drop3(data_sorted, k=5, show_plots=False)
+#X_drop3, y_drop3 = drop3(data_sorted, k=5, show_plots=False)
+
+ogKNN = KNNAlgorithm()
+reducedKNN = KNNAlgorithm()
+ogKNN.fit(features, labels)
+reduction = ReductionKNN(ogKNN,reducedKNN)
+keep_indices = reduction.drop3(features, labels)
+
+X_drop3, y_drop3 = features.loc[keep_indices].values, labels[keep_indices].values
+
 # Original Data Plot
 plt.figure(figsize=(8, 8))
 for class_label in unique_classes:
