@@ -1,0 +1,19 @@
+\begin{thebibliography}{1}
+
+\bibitem{vazquez2005}
+Fernando Vázquez, Josep Sánchez, and Filiberto Pla.
+\newblock A stochastic approach to wilson's editing algorithm.
+\newblock pages 35--42, 01 2005.
+
+\bibitem{wilson1972asymptotic}
+D.~L. Wilson.
+\newblock Asymptotic properties of nearest neighbor rules using edited data.
+\newblock {\em IEEE Transactions on Systems, Man, and Cybernetics},
+  2(3):408--421, 1972.
+
+\bibitem{wilson2000reduction}
+Dennis~R. Wilson and Tony~R. Martinez.
+\newblock Reduction techniques for instance-based learning algorithms.
+\newblock {\em Machine Learning}, 38(3):257--286, 2000.
+
+\end{thebibliography}
