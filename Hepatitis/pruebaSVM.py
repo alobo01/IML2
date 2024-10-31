@@ -159,7 +159,7 @@ np.savetxt("pre_analysis.txt", prev_results[0], fmt="%s", delimiter=" , ")
 #prev_results[1].to_csv('svm_hepatitis_results.csv', index=False)
 kernel_def, c_value_def = find_top_five(prev_results[0])
 best_five_algo=filter_top_models(prev_results[1],kernel_def,c_value_def)
-best_five_algo.to_csv('svm_hepatitis_results.csv', index=False)
+# best_five_algo.to_csv('svm_hepatitis_results.csv', index=False)
 
 # 3. I apply the Friedman-Nemenyi test to obtain the best model
 
@@ -170,4 +170,64 @@ df_1 = best_five_algo[['Fold', 'Model', 'Accuracy']]
 test_results_1 = statisticalAnalysis.select_and_apply_test(df_1)
 
 # Plot with conclusions including Nemenyi test if applicable
-statisticalAnalysis.plot_conclusions_with_nemenyi(df_1, test_results_1)
+best_SVM_algo=statisticalAnalysis.plot_conclusions_with_nemenyi(df_1, test_results_1)
+# Filter the DataFrame to keep only rows with 'SVM, kernel=linear, C=1.0' in the 'Model' column
+best_algo=best_five_algo[best_five_algo['Model'] == best_SVM_algo]
+best_algo.to_csv('svm_hepatitis_results.csv', index=False)
+print(best_SVM_algo)
+
+
+# 4. I study the accuracy, performance and f1 of the SELECTED model in
+# the 10 initial folds + 10 reduced folds for the 3 methods of reduction (over 40 folds in total)
+
+def total_analysis(best_model,dataset_path_ff):
+    # Add reduction methods (None means original dataset)
+    parts = str(best_model).split(", ")
+    kernel_def_f = parts[1].split("=")[1]  # Extracts the kernel
+    c_value_def_f = float(parts[2].split("=")[1]) # Extracts the C value
+    reduction_methods_f = ['EENTH', 'GCNN', 'DROP3']
+    metrics = []
+
+    print(f"Testing configurations across 10 folds with different reduction methods.")
+    for reduction_method in reduction_methods_f:
+        reduction_desc = reduction_method if reduction_method else "None"
+
+        for fold in range(10):
+            model = f"SVM, kernel={kernel_def_f}, C={c_value_def_f}"
+            x_train, y_train, x_test, y_test = load_fold_data(fold, dataset_path_ff,reduction_method)
+            # Create an instance of the SVM class with the training data
+            svm_classifier = SVM(train_data=x_train,train_labels=y_train,kernel=kernel_def_f,C=c_value_def_f,gamma='auto')
+
+                # Train the SVM model
+            svm_classifier.train()
+
+                # Evaluation of the model on the test set
+            evaluation=svm_classifier.evaluate(x_test, y_test)
+
+            metrics.append({
+                    'Model': model+', '+reduction_desc,
+                    'Fold': fold,
+                    'Accuracy': evaluation[0],
+                    'Time': evaluation[1],
+                    'F1': evaluation[2],
+                    'recall': evaluation[3]
+            })
+                # evaluation[3] is the recall
+            print(f'Model {model}, for hepatitis/{fold} and {reduction_desc} trained and saved.')
+
+    return pd.DataFrame(metrics)
+
+best_algo_reduced= total_analysis(best_SVM_algo,dataset_path)
+best_algo_reduced.to_csv('svm_hepatitis_results.csv', mode='a', index=False, header=False)
+# Concatenate the results
+combined_panda = pd.concat([best_algo, best_algo_reduced], ignore_index=True)
+
+
+# 5. I apply the Friedman + Nemenyi test to get the best reduction method.
+df_2 = combined_panda[['Fold', 'Model', 'Accuracy']]
+
+# Apply tests
+test_results_2 = statisticalAnalysis.select_and_apply_test(df_2)
+
+# Plot with conclusions including Nemenyi test if applicable
+best_SVM_algo_2=statisticalAnalysis.plot_conclusions_with_nemenyi(df_2, test_results_2)

@@ -134,7 +134,7 @@ def plot_conclusions(data, results):
         results (dict): Dictionary of test results with test names as keys and p-values as values.
     """
     plt.figure(figsize=(10, 8))
-    sns.boxplot(x='Model', y='Accuracy', data=data)
+    sns.boxplot(x='Model', y='Accuracy', data=data, showfliers=False)
     #plt.title('Model Performance Comparison')
     plt.xlabel('Model Names')
     plt.ylabel('Accuracy')
@@ -183,7 +183,8 @@ def plot_conclusions_with_nemenyi(data, results):
     plt.tight_layout()
     plt.show()
     results["Friedman"] = 0.01
-    plot_conclusions_with_nemenyi_rank(data, results)
+
+    return plot_conclusions_with_nemenyi_rank(data, results)
 
 
 # Enhanced plotting function with Nemenyi test, adapted for a mean rank plot with error bars
@@ -219,6 +220,9 @@ def plot_conclusions_with_nemenyi_rank(data, results, alpha=0.05):
 
         # Optional: Display the critical difference value for interpretation
         print(f"Critical Difference (CD) at alpha={alpha}: {critical_difference:.3f}")
+        print(f"{models[0]} has the best accuracy")
+
+        return models[0]
 
 # Generate sample data
 # df = generate_sample_data(num_models=5, num_samples=20)
