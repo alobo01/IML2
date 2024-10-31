@@ -205,7 +205,7 @@ def plot_conclusions_with_nemenyi(data, results):
                 bbox={"facecolor": "lightgray", "alpha": 0.5, "pad": 5})
     plt.tight_layout()
     plt.show()
-    results["Friedman"] = 0.01
+    #results["Friedman"] = 0.01
     plot_conclusions_with_nemenyi_rank(data, results)
 
 
