@@ -47,15 +47,15 @@ def perform_t_test(data1, data2, alpha=0.05):
 def perform_anova(data):
     """
     Conducts an ANOVA test to determine if there are significant differences
-    among the performance metrics of multiple models.
+    among the Accuracy of multiple models.
 
     Parameters:
-        data (pd.DataFrame): DataFrame containing 'models names' and 'performance metric'.
+        data (pd.DataFrame): DataFrame containing 'Model' and 'Accuracy'.
 
     Returns:
         float: p-value from the ANOVA test.
     """
-    anova_result = stats.f_oneway(*[group["performance metric"].values for name, group in data.groupby("models names")])
+    anova_result = stats.f_oneway(*[group["Accuracy"].values for name, group in data.groupby("Model")])
     return anova_result.pvalue
 
 
@@ -66,12 +66,12 @@ def perform_friedman_test(data):
     among multiple paired samples (model performances).
 
     Parameters:
-        data (pd.DataFrame): DataFrame containing 'models names' and 'performance metric'.
+        data (pd.DataFrame): DataFrame containing 'Model' and 'Accuracy'.
 
     Returns:
         float: p-value from the Friedman test.
     """
-    grouped_data = [group["performance metric"].values for name, group in data.groupby("models names")]
+    grouped_data = [group["Accuracy"].values for name, group in data.groupby("Model")]
     friedman_result = stats.friedmanchisquare(*grouped_data)
     return friedman_result.pvalue
 
@@ -100,13 +100,13 @@ def select_and_apply_test(data, alpha=0.05):
     Uses ANOVA or t-test if data is normal, otherwise uses Friedman or Wilcoxon tests.
 
     Parameters:
-        data (pd.DataFrame): DataFrame containing 'models names' and 'performance metric'.
+        data (pd.DataFrame): DataFrame containing 'Model' and 'Accuracy'.
         alpha (float): Significance level for normality and tests (default is 0.05).
 
     Returns:
         dict: Dictionary of test results with test names as keys and p-values as values.
     """
-    model_groups = [group["performance metric"] for name, group in data.groupby("models names")]
+    model_groups = [group["Accuracy"] for name, group in data.groupby("Model")]
     is_normal = all(check_normality(group, alpha) for group in model_groups)
     results = {}
 
@@ -127,17 +127,17 @@ def select_and_apply_test(data, alpha=0.05):
 # Function to plot conclusions
 def plot_conclusions(data, results):
     """
-    Plots the model performance metrics and annotates conclusions based on statistical tests.
+    Plots the model Accuracy and annotates conclusions based on statistical tests.
 
     Parameters:
-        data (pd.DataFrame): DataFrame containing 'models names' and 'performance metric'.
+        data (pd.DataFrame): DataFrame containing 'Model' and 'Accuracy'.
         results (dict): Dictionary of test results with test names as keys and p-values as values.
     """
-    plt.figure(figsize=(10, 6))
-    sns.boxplot(x='models names', y='performance metric', data=data)
-    plt.title('Model Performance Comparison')
+    plt.figure(figsize=(10, 8))
+    sns.boxplot(x='Model', y='Accuracy', data=data, showfliers=False)
+    #plt.title('Model Performance Comparison')
     plt.xlabel('Model Names')
-    plt.ylabel('Performance Metric')
+    plt.ylabel('Accuracy')
 
     # Annotate the plot with test results
     conclusion_text = "\n".join([f"{test}: p-value = {p_value:.3f}" for test, p_value in results.items()])
@@ -148,37 +148,13 @@ def plot_conclusions(data, results):
     plt.show()
 
 
-# Function to plot conclusions
-def plot_conclusions(data, results):
-    """
-    Plots the model performance metrics and annotates conclusions based on statistical tests.
-
-    Parameters:
-        data (pd.DataFrame): DataFrame containing 'models names' and 'performance metric'.
-        results (dict): Dictionary of test results with test names as keys and p-values as values.
-    """
-    plt.figure(figsize=(10, 6))
-    sns.boxplot(x='models names', y='performance metric', data=data)
-    plt.title('Model Performance Comparison')
-    plt.xlabel('Model Names')
-    plt.ylabel('Performance Metric')
-
-    # Annotate the plot with test results
-    conclusion_text = "\n".join([f"{test}: p-value = {p_value:.3f}" for test, p_value in results.items()])
-    plt.figtext(0.15, -0.1, conclusion_text, ha="left", fontsize=10,
-                bbox={"facecolor": "lightgray", "alpha": 0.5, "pad": 5})
-
-    plt.tight_layout()
-    plt.show()
-
-
-# Generate sample dataset with a dataset column for Nemenyi test pivoting
+# Generate sample Fold with a Fold column for Nemenyi test pivoting
 def generate_sample_data(num_models=5, num_samples=20, seed=42):
     np.random.seed(seed)
     data = {
-        "dataset": [],
-        "models names": [],
-        "performance metric": []
+        "Fold": [],
+        "Model": [],
+        "Accuracy": []
     }
     for i in range(num_models):
         model_name = f"Model_{i + 1}"
@@ -186,27 +162,28 @@ def generate_sample_data(num_models=5, num_samples=20, seed=42):
         std_dev_performance = 5 + np.random.uniform(-1, 2)
         performance = np.random.normal(loc=mean_performance, scale=std_dev_performance, size=num_samples)
 
-        data["dataset"].extend(range(num_samples))
-        data["models names"].extend([model_name] * num_samples)
-        data["performance metric"].extend(performance)
+        data["Fold"].extend(range(num_samples))
+        data["Model"].extend([model_name] * num_samples)
+        data["Accuracy"].extend(performance)
 
     return pd.DataFrame(data)
 
 # Enhanced plotting function with Nemenyi test
 def plot_conclusions_with_nemenyi(data, results):
-    plt.figure(figsize=(10, 6))
-    sns.boxplot(x='models names', y='performance metric', data=data)
-    plt.title('Model Performance Comparison')
+    plt.figure(figsize=(10, 8))
+    sns.boxplot(x='Model', y='Accuracy', data=data)
+    #plt.title('Model Performance Comparison')
     plt.xlabel('Model Names')
-    plt.ylabel('Performance Metric')
+    plt.ylabel('Accuracy')
 
     conclusion_text = "\n".join([f"{test}: p-value = {p_value:.3f}" for test, p_value in results.items()])
     plt.figtext(0.15, -0.1, conclusion_text, ha="left", fontsize=10,
                 bbox={"facecolor": "lightgray", "alpha": 0.5, "pad": 5})
+    plt.xticks(rotation=70)
     plt.tight_layout()
     plt.show()
-    #results["Friedman"] = 0.01
-    plot_conclusions_with_nemenyi_rank(data, results)
+
+    return plot_conclusions_with_nemenyi_rank(data, results)
 
 
 # Enhanced plotting function with Nemenyi test, adapted for a mean rank plot with error bars
@@ -216,7 +193,7 @@ def plot_conclusions_with_nemenyi_rank(data, results, alpha=0.05):
         print("Performing Nemenyi post-hoc test as Friedman test showed significant differences.")
 
         # Step 2: Reshape data for Nemenyi test
-        data_wide = data.pivot(index="dataset", columns="models names", values="performance metric")
+        data_wide = data.pivot(index="Fold", columns="Model", values="Accuracy")
         nemenyi_results = posthoc_nemenyi_friedman(data_wide)
 
         # Step 3: Calculate the average ranks for each model
@@ -225,15 +202,15 @@ def plot_conclusions_with_nemenyi_rank(data, results, alpha=0.05):
         mean_ranks = ranks.values
 
         # Step 4: Calculate the critical difference (CD)
-        k = data['models names'].nunique()  # number of models
-        N = data['dataset'].nunique()  # number of datasets (samples)
+        k = data['Model'].nunique()  # number of models
+        N = data['Fold'].nunique()  # number of Folds (samples)
         q_alpha = 2.569  # for 0.05 significance level and typical value when k=5
         critical_difference = q_alpha * np.sqrt((k * (k + 1)) / (6 * N))
 
         # Step 5: Plot the mean ranks with confidence intervals
         plt.figure(figsize=(12, 8))
         plt.errorbar(models, mean_ranks, yerr=critical_difference / 2, fmt='o', capsize=5, capthick=2)
-        plt.xticks(rotation=90)
+        plt.xticks(rotation=70)
         plt.title('Nemenyi Test of Pipelines')
         plt.xlabel('Model')
         plt.ylabel('Mean Rank')
@@ -242,12 +219,17 @@ def plot_conclusions_with_nemenyi_rank(data, results, alpha=0.05):
 
         # Optional: Display the critical difference value for interpretation
         print(f"Critical Difference (CD) at alpha={alpha}: {critical_difference:.3f}")
+        print(f"{models[0]} has the best accuracy")
+
+        return models[0]
 
 # Generate sample data
-df = generate_sample_data(num_models=5, num_samples=20)
+#df = generate_sample_data(num_models=5, num_samples=20)
 
 # Apply tests
-test_results = select_and_apply_test(df)
+#test_results = select_and_apply_test(df)
 
 # Plot with conclusions including Nemenyi test if applicable
-plot_conclusions_with_nemenyi(df, test_results)
+#plot_conclusions_with_nemenyi(df, test_results)
+
+#generate_sample_data(num_models=5, num_samples=20).to_csv('example.csv',index=False)

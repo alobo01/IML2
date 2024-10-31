@@ -1,0 +1,100 @@
+\title{Comparative Analysis of KNN and SVM Classifiers on Medical and Biological Datasets}
+\author{[Author Names]}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+This study presents a comparative analysis of K-Nearest Neighbors (KNN) and Support Vector Machine (SVM) algorithms applied to two distinct datasets from the UCI Machine Learning Repository: a mushroom classification dataset and a hepatitis prognosis dataset. These datasets represent different domains within biological and medical classification tasks, with varying characteristics in terms of feature types, class distribution, and missing data patterns. Through this analysis, we investigate the performance and applicability of these algorithms across different data conditions, contributing to the understanding of their relative strengths and limitations in real-world classification scenarios.
+\end{abstract}
+
+\section{Introduction}
+Machine learning techniques have become instrumental in developing predictive models across various domains. Among these, K-Nearest Neighbors (KNN) and Support Vector Machine (SVM) represent two distinct approaches to classification problems. While KNN operates through instance-based learning by considering proximity to neighboring points, SVM constructs optimal hyperplanes to separate classes in high-dimensional space.
+
+This study aims to evaluate these algorithms' performance on two datasets with distinct characteristics:
+\begin{itemize}
+    \item The Mushroom dataset: A balanced binary classification problem focused on distinguishing edible from poisonous mushrooms based on physical characteristics
+    \item The Hepatitis dataset: An imbalanced medical dataset aimed at predicting patient survival based on clinical and demographic features
+\end{itemize}
+
+\section{Dataset Descriptions and Preprocessing}
+
+\subsection{Mushroom Dataset}
+\subsubsection{Overview}
+The mushroom dataset comprises 8,124 samples with 23 categorical features describing various physical characteristics of mushroom species. The classification task involves identifying mushrooms as either edible or poisonous, presenting a balanced binary classification problem with 4,208 edible and 3,916 poisonous samples.
+
+\subsubsection{Feature Characteristics}
+The features can be categorized into three types:
+\begin{itemize}
+    \item Ordinal features (3): gill-spacing, ring-number, population
+    \item Binary features (3): bruises, gill-size, stalk-shape
+    \item Nominal features (16): Including cap characteristics, colors, and environmental indicators
+\end{itemize}
+
+\subsubsection{Preprocessing Steps}
+\begin{itemize}
+    \item Missing Values: Only the stalk-root feature contains missing values (30\% of samples), which were handled using SimpleImputer with most frequent value strategy
+    \item Feature Encoding:
+    \begin{itemize}
+        \item Ordinal and binary features: Encoded using OrdinalEncoder
+        \item Nominal features: Encoded using TargetEncoder to avoid dimension explosion while maintaining meaningful value relationships
+    \end{itemize}
+\end{itemize}
+
+\subsection{Hepatitis Dataset}
+\subsubsection{Overview}
+The hepatitis dataset contains 155 samples with both numerical and categorical features, aimed at predicting patient survival. The dataset presents an imbalanced classification problem with 123 survival cases and 32 mortality cases.
+
+\subsubsection{Feature Characteristics}
+The dataset includes:
+\begin{itemize}
+    \item Numerical features (6): Age, Bilirubin, Alkaline Phosphate, SGOT, Albumin, Protime
+    \item Categorical features (13): Including demographic information, symptoms, and clinical indicators
+\end{itemize}
+
+\subsubsection{Preprocessing Steps}
+\begin{itemize}
+    \item Missing Values:
+    \begin{itemize}
+        \item Protime feature removed due to high missing value percentage (>40\%)
+        \item Remaining missing values handled using median imputation for numerical features and mode imputation for categorical features
+    \end{itemize}
+    \item Feature Scaling:
+    \begin{itemize}
+        \item Numerical features: Scaled to [0,1] range using MinMaxScaler
+        \item Categorical features: Binary encoded using OrdinalEncoder
+    \end{itemize}
+\end{itemize}
+
+\section{Preliminary Analysis}
+\subsection{Feature Distribution Analysis}
+Initial analysis revealed several features with strong class separation properties:
+
+\subsubsection{Mushroom Dataset}
+Key discriminative features include:
+\begin{itemize}
+    \item Odor: Complete class separation for values a,c,m,p,s,y
+    \item Spore print color: Complete separation for values b,o,r,u,y
+\end{itemize}
+
+\subsubsection{Hepatitis Dataset}
+Notable patterns include:
+\begin{itemize}
+    \item Sex: All mortality cases were female in the dataset
+    \item Albumin: Clear threshold effect with mortality cases showing values below 0.4
+\end{itemize}
+
+\section{Methods}
+[To be completed with model implementation details]
+
+\section{Results}
+[To be completed with experimental results]
+
+\section{Discussion}
+[To be completed with analysis of results]
+
+\section{Conclusion}
+[To be completed with final remarks]
+
+\end{document}
