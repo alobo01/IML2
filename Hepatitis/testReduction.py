@@ -18,7 +18,7 @@ def load_fold_data(fold_number, dataset_path):
     train_file = os.path.join(dataset_path, f'hepatitis.fold.{fold_number:06d}.train.arff')
     test_file = os.path.join(dataset_path, f'hepatitis.fold.{fold_number:06d}.test.arff')
 
-    loaded_preprocessor = DataPreprocessor().load("hepatitis_preprocessor.joblib")
+    loaded_preprocessor = DataPreprocessor().load(f'preprocessor_instances/hepatitis.fold.{fold_number:06d}.preprocessor.joblib')
     train_data_preprocessed = loaded_preprocessor.transform(DataPreprocessor.load_arff(train_file))
     test_data_preprocessed = loaded_preprocessor.transform(DataPreprocessor.load_arff(test_file))
 
@@ -86,7 +86,7 @@ def process_fold(fold_number, dataset_path, method):
 # Main function to process all folds
 def main(dataset_path):
     # Reduction methods to compare
-    reduction_methods = ['DROP3', 'None', 'GCNN', 'EENTH']
+    reduction_methods = [ 'DROP3','EENTH', 'None', 'GCNN']
     n_folds = 10
 
     # Initialize result storage

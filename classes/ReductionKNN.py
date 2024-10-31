@@ -138,8 +138,27 @@ class ReductionKNN:
         prototype_labels = pd.Series(prototype_labels)
 
         # Compute δn: minimum distance between points of different classes
-        dist_matrix = pd.DataFrame(np.linalg.norm(features.values[:, np.newaxis] - features.values, axis=2))
-        delta_n = dist_matrix[labels.values[:, np.newaxis] != labels.values].min().min()
+        # For smaller datasets
+        # dist_matrix = pd.DataFrame(np.linalg.norm(features.values[:, np.newaxis] - features.values, axis=2))
+        # delta_n = dist_matrix[labels.values[:, np.newaxis] != labels.values].min().min()
+
+        # Initialize a large minimum distance
+        delta_n = np.inf
+
+        # Compute minimum distance row-by-row
+        for i in range(len(features)):
+            # Calculate distance only for the current row
+            distances = np.linalg.norm(features.iloc[i] - features, axis=1)
+
+            # Mask distances where labels are the same
+            mask = labels != labels.iloc[i]
+            filtered_distances = distances[mask]
+
+            # Update delta_n if a smaller valid distance is found
+            if len(filtered_distances) > 0:
+                min_dist = filtered_distances.min()
+                if min_dist < delta_n:
+                    delta_n = min_dist
 
         # Iteratively absorb points
         absorbed = pd.Series(False, index=features.index)
@@ -217,7 +236,7 @@ class ReductionKNN:
 
         return [index for index in old_indices if index]
 
-    def drop3(self, features: pd.DataFrame, labels: pd.Series, n_neighbors: int = 3) -> list:
+    def drop3(self, features: pd.DataFrame, labels: pd.Series, k: int = 3) -> list:
         """
         DROP3 algorithm for selecting points to keep based on majority voting of their neighbors' neighbors.
 
@@ -230,116 +249,101 @@ class ReductionKNN:
         - list: The indices of the points in the original dataset that should be kept.
         """
 
+
         # First step, apply a single ENN pass to remove noisy points
         enn_removed_indices = self.fast_enn(features, labels)
-        features.drop(index=enn_removed_indices)
-        labels.drop(index=enn_removed_indices)
+        features.drop(index=enn_removed_indices, inplace=True)
+        labels.drop(index=enn_removed_indices, inplace=True)
 
-        # Reset indices for features and labels to create a continuous index
-        original_index = features.index
-        features.reset_index(drop=True, inplace=True)
-        labels.reset_index(drop=True, inplace=True)
+        # Step 1: Retrieve neighbors for each sample using the custom KNN classç
+        self.reducedKNN.fit(features,labels)
+        results = self.reducedKNN.get_neighbors(features, custom_k=k + 1, return_distances=True)
 
-        # Convert to numpy arrays for faster processing
-        X = features.values
-        y = labels.values.ravel() if labels.values.ndim > 1 else labels.values
+        # Prepare structures for neighbors, distances, and labels, excluding the point itself
+        all_neighbours, all_distances, all_labels = [], [], []
+        for (neighbours, distances), neighbours_labels in results:
+            all_neighbours.append(neighbours[1:])
 
-        nn = NearestNeighbors(n_neighbors=n_neighbors + 1)
-        nn.fit(X)
-        distances, indices = nn.kneighbors(X)
+        all_neighbours = np.array(all_neighbours)
 
-        # Calculate average distance to enemy points
-        enemy_distances = []
-        for i in range(len(X)):
-            current_class = y[i]
-            enemy_indices = [idx for idx in indices[i][1:] if y[idx] != current_class]
+        # Track points to keep
+        keep_indices = np.ones(len(features), dtype=bool)
+        associates = {tuple(vector): [] for vector in features.values}
 
-            if enemy_indices:
-                avg_enemy_dist = np.mean([distances[i][indices[i].tolist().index(idx)] for idx in enemy_indices])
-            else:
-                avg_enemy_dist = float('inf')
+        # Build associates list to store reverse neighbor relationships
+        for idx, neighbors in enumerate(all_neighbours):
+            for neighbor in neighbors:
+                associates[tuple(neighbor)].append(idx)
 
-            enemy_distances.append(avg_enemy_dist)
+        # Track unique class labels and their counts
+        unique_classes = np.unique(labels)
+        class_count = {class_label: np.sum(labels == class_label) for class_label in unique_classes}
 
-        sort_indices = np.argsort(enemy_distances)
-        sorted_features = pd.DataFrame(X[sort_indices], columns=features.columns)
-        sorted_labels = pd.Series(y[sort_indices])
+        # DROP3 logic: Evaluate each sample to determine if it should be kept
+        for idx, (sample, label) in enumerate(zip(features.values, labels.values)):
 
-        # Create a dictionary to map each row index to its nearest neighbors
-        knn = NearestNeighbors(n_neighbors=n_neighbors + 1)  # +1 to include the point itself
-        knn.fit(sorted_features)
 
-        # Dictionary of neighbors: {index of the point: indices of its neighbors}
-        neighbors = dict()
-        for row_index, row_value in zip(sorted_features.index.values, sorted_features.values):
-            neighbors[row_index] = knn.kneighbors(row_value.reshape(1, -1))[1][0]  # Neighbors for the current point
+            associate_indices = associates[tuple(features.values[idx])]
+            y_assoc = labels.values[associate_indices]
+            if not associate_indices:
+                # Check if removing this point would leave any class without representation
+                if class_count[label] > 1:  # Ensure at least one node per class
+                    keep_indices[idx] = False
+                    class_count[label] -= 1  # Update class count after removal
+                continue
 
-        removed_indices = []
-        remaining_indices = sorted_features.index.to_list()
+            temp_keep = keep_indices.copy()
+            # With sample
+            self.reducedKNN.fit(features.iloc[temp_keep], labels.iloc[temp_keep])
+            y_pred_with = self.reducedKNN.predict(features.iloc[associate_indices])
+            correct_with = np.sum(y_pred_with == y_assoc)
 
-        while True:
-            to_remove = []
+            # Without sample
 
-            # Iterate through remaining points
-            for point_idx in remaining_indices:
-                point_label = sorted_labels.loc[point_idx]
-                point_neighbors = neighbors[point_idx][1:]  # Exclude the point itself
+            temp_keep[idx] = False
+            self.reducedKNN.fit(features.iloc[temp_keep], labels.iloc[temp_keep])
+            y_pred_without = self.reducedKNN.predict(features.iloc[associate_indices])
+            correct_without = np.sum(y_pred_without == y_assoc)
 
-                count_with = 0
-                count_without = 0
-                # Check each neighbor's neighbors (the neighbors of the current point)
-                for neighbor_idx in point_neighbors:
-                    neighbor_neighbors = neighbors[neighbor_idx][1:]  # Exclude itself
+            # Decision: keep or drop based on prediction improvement and class representation
+            if correct_without >= correct_with and class_count[label] > 1:
+                keep_indices[idx] = False
+                class_count[label] -= 1
 
-                    # Get the labels of the neighbor's neighbors
-                    neighbors_neighbor_labels = sorted_labels.loc[neighbor_neighbors].values
-
-                    # Check the majority label among the neighbor's neighbors, without including the original point
-                    without_point = np.argmax(np.bincount(neighbors_neighbor_labels.astype(int)))
-
-                    # Check the majority label when including the original point's label
-                    with_point = np.argmax(np.bincount(np.append(neighbors_neighbor_labels, point_label).astype(int)))
-
-                    # If the class of the neighbor is classified correctly without the point
-                    if without_point == sorted_labels.loc[neighbor_idx]:
-                        count_without += 1
-                    # If the class of the neighbor is classified correctly with the point
-                    if with_point == sorted_labels.loc[neighbor_idx]:
-                        count_with += 1
-
-                if count_with <= count_without:
-                    to_remove.append(point_idx)
-
-            if not to_remove:
+            if np.sum(keep_indices) == k:
                 break
 
-            removed_indices.extend(to_remove)
-            remaining_indices = [idx for idx in remaining_indices if idx not in to_remove]
-
-        # Return the original indices of the points to keep
-        return original_index[remaining_indices].tolist()
+        # Return indices of retained samples
+        return features.index[keep_indices].tolist()
 
     def fast_enn(self, features: DataFrame, labels: DataFrame, k=3):
-        absorbed = pd.Series(True, index=features.index)
+        # Step 1: Retrieve all neighbors and distances at once
+        results = self.originalKNN.get_neighbors(features, custom_k=k + 1, return_distances=True)
 
-        knn = NearestNeighbors(n_neighbors=k)
-        knn.fit(features[absorbed], labels[absorbed])
+        # Extract neighbors, distances, and labels, excluding the point itself
+        all_neighbours, all_distances, all_labels = [], [], []
+        for (neighbours, distances), neighbours_labels in results:
+            all_neighbours.append(neighbours[1:])
+            all_distances.append(distances[1:])
+            all_labels.append(neighbours_labels[1:])
 
-        for i in features.index[absorbed]:
-            _, neighbors = knn.kneighbors(features.loc[i].values.reshape(1, -1))
-            neighbor_labels = labels.values[neighbors[0][1:]]  # excluding the point itself
+        # Convert lists to numpy arrays for faster operations
+        all_neighbours = np.array(all_neighbours)
+        all_distances = np.array(all_distances)
+        all_labels = np.array(all_labels)
 
+        # Step 2: Check majority label agreement for each sample
+        absorbed = np.ones(len(features), dtype=bool)  # Start with all points "absorbed"
+        for i, label in enumerate(labels.values):
             # Count occurrences of each label among neighbors
-            counts = Counter(neighbor_labels)
-
-            # Get the most common label and its count
+            counts = Counter(all_labels[i])
             most_common_label, most_common_count = counts.most_common(1)[0]
 
-            # If majority of k neighbors disagree, remove the point
-            if most_common_label != labels[i]:
+            # If the majority disagrees with the sample's label, mark it as not absorbed
+            if most_common_label != label:
                 absorbed[i] = False
 
-        return absorbed[absorbed].index.tolist()
+        return features.index[absorbed].tolist()
 
     def repeated_edited_nearest_neighbor(self, features: DataFrame, labels: DataFrame, k=3):
         """
@@ -420,7 +424,7 @@ class ReductionKNN:
 
         return condensed_indices
 
-    def editing_algorithm_estimating_class_probabilities_and_threshold(self, features, labels, k=3, mu=0.1):
+    def editing_algorithm_estimating_class_probabilities_and_threshold(self, features, labels, k=3, mu=0.5):
         """
         Reference: https://campusvirtual.ub.edu/pluginfile.php/8517391/mod_resource/content/1/EENTh_A_Stochastic_Approach_to_Wilsons_Editing_Algorith.pdf
 
@@ -443,32 +447,49 @@ class ReductionKNN:
             labels (numpy array): The corresponding labels for the dataset.
             k (int): The number of nearest neighbors to consider. Default is 3.
             theta (float): The distance threshold for δ_k-prob(x). Default is 0.1.
-            mu (float): The minimum acceptable class probability p_j. Default is 0.6.
+            mu (float): The minimum acceptable class probability p_j. Default is 0.5.
 
         Returns:
             Filtered features and labels after removing instances that do not meet the classification criteria.
         """
 
-        indices = []
-        for idx in features.index:
-            (neighbours, distances), neighbours_labels = self.originalKNN.get_neighbors(features.loc[idx],
-                                                                                        custom_k=k + 1,
-                                                                                        return_distances=True)
-            neighbours, distances, neighbours_labels = neighbours[1:], distances[1:], neighbours_labels[1:]
-            weighting_vector = 1 / (np.ones(len(distances)) + distances)
+        # Step 1: Retrieve all neighbors and distances at once
+        results = self.originalKNN.get_neighbors(features, custom_k=k + 1, return_distances=True)
+        all_neighbours, all_distances, all_labels = [], [], []
 
-            class_probabilities = {}
-            for index, l in enumerate(neighbours_labels):
-                class_probabilities[l] = class_probabilities.get(l, 0) + weighting_vector[index]
+        for (neighbours, distances), neighbours_labels in results:
+            # Exclude the point itself by slicing off the first neighbor
+            all_neighbours.append(neighbours[1:])
+            all_distances.append(distances[1:])
+            all_labels.append(neighbours_labels[1:])
 
-            # Estimate class probabilities for point x
-            predicted_class = max(class_probabilities, key=class_probabilities.get)  # Class with highest probability
-            p_j = class_probabilities[predicted_class] / sum(class_probabilities.values())  # Normalize probability
-            # If the predicted class does not match the actual class or the thresholds are violated, remove the point
-            if not (predicted_class != labels[idx] or p_j <= mu):
-                indices.append(idx)
+        # Convert lists to numpy arrays for matrix operations
+        all_neighbours = np.array(all_neighbours)
+        all_distances = np.array(all_distances)
+        all_labels = np.array(all_labels)
 
-        return indices
+        # Step 2: Compute weighting vector for all distances in one go
+        weighting_matrix = 1 / (1 + all_distances)
+
+        # Step 3: Calculate class probabilities matrix
+        unique_classes = np.unique(labels)
+        class_probabilities_matrix = np.zeros((len(features), len(unique_classes)))
+
+        for i, class_label in enumerate(unique_classes):
+            class_probabilities_matrix[:, i] = (weighting_matrix * (all_labels == class_label)).sum(axis=1)
+
+        # Step 4: Find predicted classes and their probabilities
+        predicted_class_indices = np.argmax(class_probabilities_matrix, axis=1)
+        predicted_classes = unique_classes[predicted_class_indices]
+        p_j_values = class_probabilities_matrix[
+                         np.arange(len(features)), predicted_class_indices] / class_probabilities_matrix.sum(axis=1)
+
+        # Step 5: Identify points to keep based on class match and probability threshold
+        matches_actual_class = (predicted_classes == labels)
+        meets_threshold = (p_j_values > mu)
+        keep_indices = np.where(matches_actual_class & meets_threshold)[0]
+
+        return matches_actual_class.index[keep_indices].tolist()
 
     def evaluate(self, test_data: DataFrame):
         """

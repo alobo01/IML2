@@ -1,6 +1,8 @@
 \documentclass{article}
 \usepackage{graphicx}
-\usepackage{natbib}
+\usepackage{cite}
+\usepackage{amssymb}
+\usepackage{amsmath}
 
 % Title
 \title{Your Paper Title}
@@ -11,20 +13,18 @@
 \maketitle
 
 \begin{abstract}
-\input{sections/abstract}
+\input{sections/abstract} % Ensure this file exists
 \end{abstract}
 
-\input{sections/introduction}
+\input{sections/introduction} % Ensure this file exists
+\input{sections/reductionmethods} % Ensure this file exists
+\input{sections/methodology} % Ensure this file exists
+\input{sections/results} % Ensure this file exists
+\input{sections/discussion} % Ensure this file exists
+\input{sections/conclusion} % Ensure this file exists
 
-\input{sections/methodology}
-
-\input{sections/results}
-
-\input{sections/discussion}
-
-\input{sections/conclusion}
 
 \bibliographystyle{plain}
-\bibliography{bibliography}
+\bibliography{bibliography} % Ensure bibliography.bib exists
 
 \end{document}

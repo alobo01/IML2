@@ -69,7 +69,8 @@ class SVM():
         #                 recall_score(test_labels, y_pred), precision_score(test_labels, y_pred),
         #                 f1_score(test_labels,y_pred), confusion_matrix(test_labels, y_pred)]
 
-        model_metrics_reduced =[accuracy_score(test_labels, y_pred),performance,f1_score(test_labels,y_pred)]
+        model_metrics_reduced =[accuracy_score(test_labels, y_pred),performance,f1_score(test_labels,y_pred),
+                                recall_score(test_labels, y_pred)]
 
         return model_metrics_reduced
 
