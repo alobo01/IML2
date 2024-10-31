@@ -252,128 +252,78 @@ class ReductionKNN:
         - list: The indices of the points in the original dataset that should be kept.
         """
 
-
         # First step, apply a single ENN pass to remove noisy points
         enn_keeped_indices = self.fast_enn(features, labels)
         features = features.loc[enn_keeped_indices]
         labels = labels.loc[enn_keeped_indices]
 
         # Second step, sort by the distance to the nearest enemy
-        # Initialize distance_to_Nenemy with zeros
         features["distance_to_Nenemy"] = np.zeros(len(labels))
-
-        # Loop through each index in the DataFrame
         for index in features.index:
             point = features.loc[index].values
             point_label = labels.loc[index]
-
-            # Select rows where labels are not equal to the current point's label
             enemies = features.loc[labels != point_label].values
-
-            # Calculate the minimum distance to an enemy
             min_distance = np.linalg.norm(enemies - point, axis=1).min()
-
-            # Set the minimum distance in the 'distance_to_Nenemy' column
             features.at[index, "distance_to_Nenemy"] = min_distance
 
-        # Sort the DataFrame by 'distance_to_Nenemy'
+
         features.sort_values(by="distance_to_Nenemy", inplace=True, ascending=False)
-
-        # Drop the 'distance_to_Nenemy' column after sorting
         features.drop("distance_to_Nenemy", axis=1, inplace=True)
-
-        # Reorder labels to match the sorted order of features
-        labels = labels.loc[features.index]
+        labels = labels[features.index]
 
         # Third step, Apply DROP algorithm
-        # Step 1: Retrieve neighbors for each sample using the custom KNN class
-        self.reducedKNN.fit(features,labels)
+        self.reducedKNN.fit(features, labels)
         results = self.reducedKNN.get_neighbors(features, custom_k=k + 1, return_distances=True)
 
-        # Prepare structures for neighbors, distances, and labels, excluding the point itself
-        all_neighbours, original_indices = [], []
+        all_neighbours = {}
         for (neighbours, distances), neighbours_labels in results:
-            original_indices.append(neighbours.iloc[0].name)
-            all_neighbours.append(neighbours[1:])
+            all_neighbours[neighbours.iloc[0].name] = neighbours[1:].index.tolist()
 
-        all_neighbours = np.array(all_neighbours)
+
 
         # Track points to keep
-        keep_indices = pd.Series(True, index=features.index)
-        associates = {tuple(vector): [] for vector in features.values}
+        keep_indices = pd.Series(True,index=features.index)
+        associates = {index: [] for index in features.index}
 
         # Build associates list to store reverse neighbor relationships
-        for idx, neighbors in enumerate(all_neighbours):
+        for index, neighbors in all_neighbours.items():
             for neighbor in neighbors:
-                associates[tuple(neighbor)].append(idx)
-        get_original_indices = lambda lst: map(lambda x: original_indices[x],lst)
+                associates[neighbor].append(index)
+
         # Track unique class labels and their counts
         unique_classes = np.unique(labels)
         class_count = {class_label: np.sum(labels == class_label) for class_label in unique_classes}
 
         # DROP3 logic: Evaluate each sample to determine if it should be kept
-        for idx in range(len(all_neighbours)):
+        for index in features.index:
+            label = labels.loc[index]
 
-            label = labels.loc[original_indices[idx]]
-            associate_indices = associates[tuple(features.loc[original_indices[idx]].values)]
-            y_assoc = labels.loc[get_original_indices(associate_indices)]
+            associate_indices = associates[index]
+            y_assoc = labels[associate_indices].values
             if not associate_indices:
                 # Check if removing this point would leave any class without representation
                 if class_count[label] > 1:  # Ensure at least one node per class
-                    keep_indices[original_indices[idx]] = False
+                    keep_indices[index] = False
                     class_count[label] -= 1  # Update class count after removal
                 continue
 
             temp_keep = keep_indices.copy()
             # With sample
             self.reducedKNN.fit(features.loc[temp_keep], labels.loc[temp_keep])
-            y_pred_with = self.reducedKNN.predict(features.loc[get_original_indices(associate_indices)])
+            y_pred_with = self.reducedKNN.predict(features.loc[associate_indices])
             correct_with = np.sum(y_pred_with == y_assoc)
 
             # Without sample
 
-            temp_keep[original_indices[idx]] = False
+            temp_keep[index] = False
             self.reducedKNN.fit(features.loc[temp_keep], labels.loc[temp_keep])
-            y_pred_without = self.reducedKNN.predict(features.loc[get_original_indices(associate_indices)])
+            y_pred_without = self.reducedKNN.predict(features.loc[associate_indices])
             correct_without = np.sum(y_pred_without == y_assoc)
-
-            plt.figure(figsize=(8, 6))
-            color_dict = {unique_classes[i]: plt.cm.tab10(i) for i in range(len(unique_classes))}
-            X_s, y_s = features.values, labels.values
-
-            for class_label in unique_classes:
-                plt.scatter(
-                    X_s[y_s == class_label, 0], X_s[y_s == class_label, 1],
-                    color=color_dict[class_label], edgecolor='k', alpha=0.5,
-                    label=f'Class {class_label}'
-                )
-
-            plt.scatter(X_s[idx, 0], X_s[idx, 1], color='yellow', edgecolor='black', s=200, label='Evaluated Point')
-
-            X_assoc = features.loc[get_original_indices(associate_indices)].values
-            for i, class_label in enumerate(unique_classes):
-                plt.scatter(
-                    X_assoc[y_assoc == class_label, 0], X_assoc[y_assoc == class_label, 1],
-                    color=color_dict[class_label], s=150, edgecolor='k'
-                )
-
-            # Show title, labels, and legend
-            plt.title(f'Correct with: {correct_with}, Correct without: {correct_without}')
-            plt.xlabel('Feature 1')
-            plt.ylabel('Feature 2')
-            os.makedirs("animation", exist_ok=True)
-            plt.savefig(f'animation/frame_{idx:03d}.png')
-            plt.legend()
-            plt.show()
-
-
 
             # Decision: keep or drop based on prediction improvement and class representation
             if correct_without >= correct_with and class_count[label] > 1:
-                keep_indices[original_indices[idx]] = False
+                keep_indices[index] = False
                 class_count[label] -= 1
-            else:
-                print("stop")
 
             if np.sum(keep_indices) == k:
                 break
@@ -383,7 +333,8 @@ class ReductionKNN:
 
     def fast_enn(self, features: DataFrame, labels: DataFrame, k=3):
         # Step 1: Retrieve all neighbors and distances at once
-        results = self.originalKNN.get_neighbors(features, custom_k=k + 1, return_distances=True)
+        self.reducedKNN.fit(features, labels)
+        results = self.reducedKNN.get_neighbors(features, custom_k=k + 1, return_distances=True)
 
         # Extract neighbors, original_indices, and labels, excluding the point itself
         original_indices, all_labels = [], []
@@ -392,20 +343,19 @@ class ReductionKNN:
             all_labels.append(neighbours_labels[1:])
 
         # Convert lists to numpy arrays for faster operations
-
         all_labels = np.array(all_labels)
 
         # Step 2: Check majority label agreement for each sample
-        absorbed = pd.Series(True, index=features.index)  # Start with all points "absorbed"
+        absorbed = pd.Series(False, index=features.index)  # Start with all points not "absorbed"
         for i, label in enumerate(labels):
             # Count occurrences of each label among neighbors
             counts = Counter(all_labels[i])
             most_common_label, most_common_count = counts.most_common(1)[0]
             # If the majority disagrees with the sample's label, mark it as not absorbed
-            if most_common_label != label:
-                absorbed[original_indices[i]] = False
+            if most_common_label == label:
+                absorbed[original_indices[i]] = True
 
-        return features[absorbed].index.tolist()
+        return absorbed[absorbed].index.tolist()
 
     def repeated_edited_nearest_neighbor(self, features: DataFrame, labels: DataFrame, k=3):
         """

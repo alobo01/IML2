@@ -85,7 +85,7 @@ def process_fold(fold_number, dataset_path, method):
 # Main function to process all folds
 def main(dataset_path):
     # Reduction methods to compare
-    reduction_methods = ['None', 'GCNN', 'EENTH', 'DROP3']
+    reduction_methods = [ 'DROP3', 'None', 'GCNN', 'EENTH']
     n_folds = 10
 
     # Initialize result storage
@@ -97,7 +97,7 @@ def main(dataset_path):
         print(f"Evaluating method: {method}")
 
         # Parallel execution using ThreadPoolExecutor for each fold
-        with ThreadPoolExecutor(max_workers=4) as executor:
+        with ThreadPoolExecutor(max_workers=1) as executor:
             futures = [
                 executor.submit(process_fold, fold_number, dataset_path, method)
                 for fold_number in range(n_folds)
