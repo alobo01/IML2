@@ -83,7 +83,7 @@ class KNNAlgorithm:
                     distance_memmap[i, :] = np.sqrt(((vec1.values[i] - vec2.values) ** 2).sum(axis=1))
 
                 # Convert memory-mapped data back to DataFrame
-                return distance_memmap.copy()
+                return pd.DataFrame(distance_memmap.copy())
 
     @staticmethod
     def manhattan_distance(vec1: pd.DataFrame, vec2: pd.DataFrame) -> pd.DataFrame:

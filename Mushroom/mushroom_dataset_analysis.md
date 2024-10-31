@@ -172,25 +172,28 @@ classes, some examples are:
 
 Certain odors are specially significant, in particular a,c,m,p,s and y values, are completely class-separated:
 
-![SEX_distribution.png](plots_and_tables/feature_distributions/odor_distribution.png)
+![odor_distribution.png](plots_and_tables/feature_distributions/odor_distribution.png)
 
 
 ### Spore print color
 
 Values b,o,r,u and y are completely class-separated, with the rest of the values being almost completely separated:
 
-![ALBUMIN_distribution.png](plots_and_tables/feature_distributions/spore-print-color_distribution.png)
-
+![spore-print-color_distribution.png](plots_and_tables/feature_distributions/spore-print-color_distribution.png)
 
 Although we are not performing feature selection, these observations help us understand how the 
 weighting applied in the KNN algorithm should be distributed throughout the features.
 
 ## Preprocessing methods
 
-### For categorical features
+To handle missing values we have used sklearn.SimpleImputer from sklearn, replacing with the most occurring value.
+To encode the features we have used sklearn.ordinalImputer for the ordinal features (gill-spacing, 
+ring-number and population) and for the binary features (bruises, gill-size, stalk-shape).
 
-
-
-### For numerical features
+The remaining 16 features are nominal, with each of them having at least 3 unique values, and the most numerous one
+having 13 distinct values. Using one-hot encoder would result in too many dimensions, and using ordinal encoding
+would give an unwanted order to the features values. To tackle this problem we have used targetEncoder, which encodes
+the features "based on a shrunk estimate of the average target values for observations belonging to the category" (from 
+sklearn documentation), with this method the values are still encoded with an order but in a meaningful way.
 
 

@@ -182,7 +182,6 @@ def plot_conclusions_with_nemenyi(data, results):
     plt.xticks(rotation=70)
     plt.tight_layout()
     plt.show()
-    results["Friedman"] = 0.01
 
     return plot_conclusions_with_nemenyi_rank(data, results)
 
@@ -224,14 +223,13 @@ def plot_conclusions_with_nemenyi_rank(data, results, alpha=0.05):
 
         return models[0]
 
-
 # Generate sample data
-df = generate_sample_data(num_models=5, num_samples=20)
+#df = generate_sample_data(num_models=5, num_samples=20)
 
 # Apply tests
-test_results = select_and_apply_test(df)
+#test_results = select_and_apply_test(df)
 
 # Plot with conclusions including Nemenyi test if applicable
-plot_conclusions_with_nemenyi(df, test_results)
+#plot_conclusions_with_nemenyi(df, test_results)
 
-# generate_sample_data(num_models=5, num_samples=20).to_csv('example.csv',index=False)
+#generate_sample_data(num_models=5, num_samples=20).to_csv('example.csv',index=False)

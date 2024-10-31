@@ -1,7 +1,10 @@
+import os
+
 import numpy as np
 import random
 from collections import Counter
 
+from matplotlib import pyplot as plt
 from sklearn.neighbors import NearestNeighbors
 
 import pandas as pd
