@@ -67,8 +67,23 @@ class KNNAlgorithm:
             raise ValueError(f"Unsupported voting policy: {voting_policy}")
 
     @staticmethod
-    def euclidean_distance(vec1: pd.DataFrame, vec2: pd.DataFrame) -> pd.DataFrame:
-        return np.sqrt(((vec1.values[:, np.newaxis] - vec2.values) ** 2).sum(axis=2))
+    def euclidean_distance(vec1: pd.DataFrame, vec2: pd.DataFrame, memmap_file='distance_memmap.dat') -> pd.DataFrame:
+        try:
+            # Attempt to calculate distances directly in memory
+            return np.sqrt(((vec1.values[:, np.newaxis] - vec2.values) ** 2).sum(axis=2))
+        except MemoryError:
+            print("MemoryError encountered, switching to disk-based computation.")
+
+            # Define the shape of the result array for memory mapping
+            shape = (vec1.shape[0], vec2.shape[0])
+
+            # Use a memory-mapped file to handle large data
+            with np.memmap(memmap_file, dtype='float32', mode='w+', shape=shape) as distance_memmap:
+                for i in range(vec1.shape[0]):
+                    distance_memmap[i, :] = np.sqrt(((vec1.values[i] - vec2.values) ** 2).sum(axis=1))
+
+                # Convert memory-mapped data back to DataFrame
+                return pd.DataFrame(distance_memmap.copy())
 
     @staticmethod
     def manhattan_distance(vec1: pd.DataFrame, vec2: pd.DataFrame) -> pd.DataFrame:

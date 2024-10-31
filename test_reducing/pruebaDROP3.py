@@ -1,5 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
+
+from classes.KNN import KNNAlgorithm
+from classes.ReductionKNN import ReductionKNN
 from sklearn.datasets import make_blobs
 from sklearn.neighbors import KNeighborsClassifier, NearestNeighbors
 from matplotlib import colormaps
@@ -14,9 +17,12 @@ label_encoder = LabelEncoder()
 # Load the ARFF file
 data, meta = arff.loadarff('grid.fold.000000.train.arff')
 df = pd.DataFrame(data)
+df["class"] = label_encoder.fit_transform(df["class"])
+
+features, labels = df.drop("class", axis=1), df["class"]
+
 X, y = df.drop("class", axis=1).values, df["class"].values
 
-y = label_encoder.fit_transform(y)
 
 # Create a color dictionary from the colormap
 unique_classes = np.unique(y)
@@ -63,7 +69,6 @@ def drop3(data, k=5, show_plots=True):
         for neighbor in neighbors[1:]:
             associates[neighbor].append(idx)
 
-    temp_indicesOG = keep_indices.copy()
 
     unique_classes = np.unique(y_s)  # Get unique class labels
 
@@ -145,7 +150,15 @@ def drop3(data, k=5, show_plots=True):
 
 
 # Apply DROP3 with optional intermediate plots
-X_drop3, y_drop3 = drop3(data_sorted, k=5, show_plots=False)
+#X_drop3, y_drop3 = drop3(data_sorted, k=5, show_plots=False)
+ogknn = KNNAlgorithm()
+ogknn.fit(features,labels)
+knn = KNNAlgorithm()
+knn.fit(features,labels)
+reduction = ReductionKNN(ogknn,knn)
+
+reducedDF = reduction.apply_reduction(df,"DROP3")
+X_drop3, y_drop3 = reducedDF.drop("class",axis=1).values, reducedDF["class"].values
 # Original Data Plot
 plt.figure(figsize=(8, 8))
 for class_label in unique_classes:
