@@ -1,4 +1,4 @@
-dataset,Model,Accuracy
+Fold,Model,Accuracy
 0,Model_1,103.68529514329711
 1,Model_1,109.68325895944594
 2,Model_1,97.64278832445993
