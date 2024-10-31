@@ -1,194 +1,191 @@
 import pandas as pd
 import numpy as np
+from scipy import stats
+from typing import Tuple, Dict
 import matplotlib.pyplot as plt
 import seaborn as sns
-from pathlib import Path
-import os
 
 
-def load_and_prepare_data(csv_path: str) -> pd.DataFrame:
-    """
-    Load the CSV and prepare aggregated statistics for reduction analysis
-    """
-    # Load results
-    results = pd.DataFrame(pd.read_csv(csv_path))
+class ReductionMethodAnalyzer:
+    def __init__(self, csv_path: str, alpha: float):
+        """Initialize the analyzer with the CSV data."""
+        self.df = pd.read_csv(csv_path)
+        self.parse_model_column()
+        self.alpha = alpha
 
-    # Extract configuration parameters and reduction method
-    results[['Algorithm', 'k', 'distance_metric', 'weighting_method', 'voting_policy', 'reduction']] = \
-        results['Model'].str.split(', ', expand=True)
+    def parse_model_column(self):
+        """Parse the Model column to extract the reduction method."""
+        # Split the Model column into its components
+        hyperparams = self.df['Model'].str.split(',', expand=True)
+        self.df['reduction_method'] = hyperparams[5].str.strip()
 
-    # Create aggregated results
-    aggregated_results = results.groupby(['reduction']).agg({
-        'Accuracy': ['mean', 'std'],
-        'Time': 'mean',
-        'F1': ['mean', 'std']
-    }).reset_index()
+    def create_pivot_table(self) -> pd.DataFrame:
+        """Create a pivot table for statistical analysis."""
+        return self.df.pivot_table(
+            values='Accuracy',
+            index='Dataset/Fold',
+            columns='reduction_method',
+            aggfunc='first'
+        )
 
-    # Flatten column names
-    aggregated_results.columns = [
-        'reduction', 'mean_accuracy', 'std_accuracy', 'mean_time',
-        'mean_f1', 'std_f1'
-    ]
+    def perform_friedman_test(self, pivot_df: pd.DataFrame) -> Tuple[float, float]:
+        """Perform Friedman test on the pivot table."""
+        return stats.friedmanchisquare(*[pivot_df[col] for col in pivot_df.columns])
 
-    return results, aggregated_results
+    def perform_bonferroni_test(self, pivot_df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Perform Bonferroni-corrected Wilcoxon signed-rank tests against NONE reduction.
+        """
+        control_data = pivot_df['NONE']
+        results = {}
+        n_comparisons = len(pivot_df.columns) - 1  # Subtract control
 
+        for method in pivot_df.columns:
+            if method != 'NONE':
+                # Calculate effect size (median difference)
+                effect_size = np.median(pivot_df[method] - control_data)
 
-def create_plots_folder(base_path: str):
-    """Create folder for plots if it doesn't exist"""
-    Path(base_path).mkdir(parents=True, exist_ok=True)
+                # Perform Wilcoxon test
+                statistic, p_value = stats.wilcoxon(
+                    control_data,
+                    pivot_df[method],
+                    alternative='two-sided'
+                )
 
+                # Calculate percentage of improvement/degradation
+                diff_percentage = ((pivot_df[method].mean() - control_data.mean())
+                                   / control_data.mean() * 100)
 
-def plot_reduction_accuracy_comparison(results: pd.DataFrame, plots_path: str):
-    """Plot comparison of reduction methods' accuracies"""
-    plt.figure(figsize=(10, 6))
-    sns.boxplot(x='reduction', y='Accuracy', data=results)
-    plt.title('Accuracy Distribution by Reduction Method\nHepatitis Dataset')
-    plt.xlabel('Reduction Method')
-    plt.ylabel('Accuracy')
-    plt.xticks(rotation=45)
-    plt.tight_layout()
-    plt.savefig(os.path.join(plots_path, 'reduction_accuracy_comparison.png'), bbox_inches='tight', dpi=300)
-    plt.close()
+                # Apply Bonferroni correction
+                adjusted_p = min(p_value * n_comparisons, 1.0)
 
+                results[method] = {
+                    'statistic': statistic,
+                    'p_value': p_value,
+                    'adjusted_p': adjusted_p,
+                    'effect_size': effect_size,
+                    'diff_percentage': diff_percentage
+                }
 
-def plot_time_comparison(aggregated_results: pd.DataFrame, plots_path: str):
-    """Plot time comparison across reduction methods"""
-    plt.figure(figsize=(10, 6))
-    sns.barplot(x='reduction', y='mean_time', data=aggregated_results)
-    plt.title('Average Execution Time by Reduction Method\nHepatitis Dataset')
-    plt.xlabel('Reduction Method')
-    plt.ylabel('Mean Execution Time (seconds)')
-    plt.xticks(rotation=45)
-    plt.tight_layout()
-    plt.savefig(os.path.join(plots_path, 'reduction_time_comparison.png'), bbox_inches='tight', dpi=300)
-    plt.close()
+        return pd.DataFrame(results).T
 
+    def analyze_reduction_methods(self) -> Dict:
+        """Analyze the impact of different reduction methods."""
+        pivot_df = self.create_pivot_table()
 
-def calculate_storage_percentages(sample_counts_df: pd.DataFrame):
-    """
-    Calculate the average percentage of storage reduction for each reduction method compared to the "None" reduction.
-    """
-    storage_percentages = {'NONE': 100}
+        # Perform Friedman test
+        friedman_stat, friedman_p = self.perform_friedman_test(pivot_df)
 
-    for reduction_method in sample_counts_df['Reduction Method'].unique():
-        if reduction_method == "NONE":
-            continue
+        # Perform Bonferroni-corrected tests against control
+        post_hoc = self.perform_bonferroni_test(pivot_df)
 
-        reduction_samples = sample_counts_df[sample_counts_df['Reduction Method'] == reduction_method]['Training Samples']
-        none_samples = sample_counts_df[sample_counts_df['Reduction Method'] == "NONE"]['Training Samples']
+        # Calculate summary statistics
+        summary = self.df.groupby('reduction_method')['Accuracy'].agg([
+            'mean', 'std', 'min', 'max'
+        ]).round(4)
 
-        avg_reduction_samples = reduction_samples.mean()
-        avg_none_samples = none_samples.mean()
+        # Calculate execution time statistics
+        time_stats = self.df.groupby('reduction_method')['Time'].agg([
+            'mean', 'std', 'min', 'max'
+        ]).round(4)
 
-        storage_percentage = avg_reduction_samples / avg_none_samples * 100
-        storage_percentages[reduction_method] = storage_percentage
+        return {
+            'summary': summary,
+            'time_stats': time_stats,
+            'friedman_result': (friedman_stat, friedman_p),
+            'post_hoc': post_hoc
+        }
 
-    return storage_percentages
+    def visualize_results(self, results: Dict) -> Tuple[plt.Figure, plt.Figure]:
+        """Create visualizations for the analysis results."""
+        # Figure 1: Accuracy comparison
+        fig1, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 6))
 
-def plot_storage_comparison(sample_counts: pd.DataFrame, plots_path: str):
+        summary = results['summary']
+        methods = summary.index
 
-    storage_percentages = calculate_storage_percentages(sample_counts)
+        # Bar plot of mean accuracy
+        ax1.bar(range(len(methods)), summary['mean'])
+        ax1.errorbar(range(len(methods)), summary['mean'],
+                     yerr=summary['std'], fmt='none', color='black', capsize=5)
+        ax1.set_xticks(range(len(methods)))
+        ax1.set_xticklabels(methods, rotation=45, ha='right')
+        ax1.set_title('Mean Accuracy by Reduction Method')
+        ax1.set_ylabel('Accuracy')
 
-    # Plot the storage percentages
-    plt.figure(figsize=(8, 6))
-    plt.bar(storage_percentages.keys(), storage_percentages.values())
-    plt.xlabel('Reduction Method')
-    plt.ylabel('Storage Percentage (%)')
-    plt.title('Storage Percentages per Reduction Method')
-    plt.grid()
-    plt.savefig(os.path.join(plots_path, 'storage_percentage_comparison.png'), bbox_inches='tight', dpi=300)
-    plt.close()
+        # Plot of statistical significance
+        post_hoc = results['post_hoc']
+        significance_plot = -np.log10(post_hoc['adjusted_p'])
+        ax2.bar(range(len(post_hoc)), significance_plot)
+        ax2.axhline(y=-np.log10(self.alpha), color='r', linestyle='--',
+                    label=f'p={self.alpha} threshold')
+        ax2.set_xticks(range(len(post_hoc)))
+        ax2.set_xticklabels(post_hoc.index, rotation=45, ha='right')
+        ax2.set_title('Statistical Significance vs NONE\n(-log10 adjusted p-value)')
+        ax2.set_ylabel('-log10(adjusted p-value)')
+        ax2.legend()
 
+        plt.tight_layout()
 
-def analyze_reduction_methods(aggregated_results: pd.DataFrame):
-    """Analyze and print statistics for each reduction method"""
-    print("\nReduction Methods Analysis:")
+        # Figure 2: Performance metrics
+        fig2, (ax3, ax4) = plt.subplots(1, 2, figsize=(15, 6))
 
-    for _, row in aggregated_results.iterrows():
-        print(f"\nReduction Method: {row['reduction']}")
-        print(f"Mean Accuracy: {row['mean_accuracy']:.4f} (±{row['std_accuracy']:.4f})")
-        print(f"Mean F1 Score: {row['mean_f1']:.4f} (±{row['std_f1']:.4f})")
-        print(f"Mean Execution Time: {row['mean_time']:.4f} seconds")
+        # Plot percentage difference from control
+        diff_percentages = post_hoc['diff_percentage']
+        colors = ['g' if x > 0 else 'r' for x in diff_percentages]
+        ax3.bar(range(len(diff_percentages)), diff_percentages, color=colors)
+        ax3.set_xticks(range(len(diff_percentages)))
+        ax3.set_xticklabels(diff_percentages.index, rotation=45, ha='right')
+        ax3.set_title('Percentage Difference from NONE')
+        ax3.set_ylabel('Difference (%)')
+        ax3.axhline(y=0, color='black', linestyle='-', alpha=0.3)
 
+        # Plot execution times
+        time_stats = results['time_stats']
+        ax4.bar(range(len(time_stats)), time_stats['mean'])
+        ax4.errorbar(range(len(time_stats)), time_stats['mean'],
+                     yerr=time_stats['std'], fmt='none', color='black', capsize=5)
+        ax4.set_xticks(range(len(time_stats)))
+        ax4.set_xticklabels(time_stats.index, rotation=45, ha='right')
+        ax4.set_title('Mean Execution Time by Reduction Method')
+        ax4.set_ylabel('Time (seconds)')
 
-def create_comparison_plots(results: pd.DataFrame, plots_path: str):
-    """Create additional comparison plots"""
-    # Accuracy vs Time trade-off
-    plt.figure(figsize=(12, 8))
-    for reduction in results['reduction'].unique():
-        reduction_data = results[results['reduction'] == reduction]
-        plt.scatter(reduction_data['Time'], reduction_data['Accuracy'],
-                    alpha=0.6, label=reduction)
-    plt.xlabel('Execution Time (seconds)')
-    plt.ylabel('Accuracy')
-    plt.title('Time-Accuracy Trade-off by Reduction Method')
-    plt.legend()
-    plt.grid(True)
-    plt.savefig(os.path.join(plots_path, 'reduction_time_accuracy_tradeoff.png'), bbox_inches='tight', dpi=300)
-    plt.close()
+        plt.tight_layout()
 
-    # F1 vs Accuracy correlation
-    plt.figure(figsize=(12, 8))
-    for reduction in results['reduction'].unique():
-        reduction_data = results[results['reduction'] == reduction]
-        plt.scatter(reduction_data['F1'], reduction_data['Accuracy'],
-                    alpha=0.6, label=reduction)
-    plt.xlabel('F1 Score')
-    plt.ylabel('Accuracy')
-    plt.title('F1 Score vs Accuracy Correlation by Reduction Method')
-    plt.legend()
-    plt.grid(True)
-    plt.savefig(os.path.join(plots_path, 'reduction_f1_accuracy_correlation.png'), bbox_inches='tight', dpi=300)
-    plt.close()
-
-
-def statistical_comparison(results: pd.DataFrame):
-    """Perform statistical comparison between reduction methods"""
-    print("\nStatistical Comparison of Reduction Methods:")
-
-    # Overall rankings
-    print("\nOverall Rankings (averaged across all configurations):")
-    rankings = results.groupby('reduction').agg({
-        'Accuracy': ['mean', 'std'],
-        'Time': 'mean',
-        'F1': ['mean', 'std']
-    }).round(4)
-
-    print("\nBy Accuracy:")
-    accuracy_ranking = rankings['Accuracy']['mean'].sort_values(ascending=False)
-    for idx, (reduction, acc) in enumerate(accuracy_ranking.items(), 1):
-        std = rankings.loc[reduction, ('Accuracy', 'std')]
-        print(f"{idx}. {reduction}: {acc:.4f} (±{std:.4f})")
-
-    print("\nBy Execution Time:")
-    time_ranking = rankings['Time']['mean'].sort_values()
-    for idx, (reduction, time) in enumerate(time_ranking.items(), 1):
-        print(f"{idx}. {reduction}: {time:.4f} seconds")
+        return fig1, fig2
 
 
-def main():
-    # Paths
-    csv_path = 'knn_reduction_results.csv'
-    counts_path = 'knn_reduction_counts.csv'
-    plots_path = '..\\Hepatitis\\plots_and_tables\\knn_reduction_analysis'
+def main(csv_path: str, output_dir: str = None):
+    """Main function to run the analysis."""
+    analyzer = ReductionMethodAnalyzer(csv_path, alpha = 0.1)
+    results = analyzer.analyze_reduction_methods()
 
-    # Create plots folder
-    create_plots_folder(plots_path)
+    # Print results
+    print("\nSummary Statistics (Accuracy):")
+    print(results['summary'])
 
-    # Load and prepare data
-    results, aggregated_results = load_and_prepare_data(csv_path)
-    sample_counts = pd.DataFrame(pd.read_csv(counts_path))
+    print("\nExecution Time Statistics:")
+    print(results['time_stats'])
 
-    # Generate plots
-    plot_reduction_accuracy_comparison(results, plots_path)
-    plot_time_comparison(aggregated_results, plots_path)
-    create_comparison_plots(results, plots_path)
-    plot_storage_comparison(sample_counts, plots_path)
+    print("\nFriedman Test Results:")
+    stat, p = results['friedman_result']
+    print(f"Statistic: {stat:.4f}")
+    print(f"p-value: {p:.4f}")
 
-    # Print analyses
-    analyze_reduction_methods(aggregated_results)
-    statistical_comparison(results)
+    print("\nPost-hoc Test Results (compared to NONE):")
+    print(results['post_hoc'].round(4))
+
+    # Create and save visualizations
+    fig1, fig2 = analyzer.visualize_results(results)
+    if output_dir:
+        fig1.savefig(f"{output_dir}/reduction_accuracy_analysis.png")
+        fig2.savefig(f"{output_dir}/reduction_performance_analysis.png")
+        plt.close('all')
+
+    return results
 
 
 if __name__ == "__main__":
-    main()
+    csv_path = "knn_reduction_results.csv"
+    output_dir = "plots_and_tables\\knn_reduction"
+    results = main(csv_path, output_dir)

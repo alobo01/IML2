@@ -42,19 +42,48 @@ def create_plots_folder(base_path: str):
 
 
 def plot_k_vs_accuracy(results: pd.DataFrame, plots_path: str):
-    """Plot K values vs accuracy"""
+    """
+    Plot K values vs accuracy, grouped by distance metric
+
+    Args:
+        results: DataFrame with columns 'k', 'distance_metric', 'mean_accuracy', 'std_accuracy'
+        plots_path: Path to save the plot
+    """
     plt.figure(figsize=(12, 6))
-    mean_scores = results.groupby('k')['mean_accuracy'].mean()
-    std_scores = results.groupby('k')['std_accuracy'].mean()
 
-    plt.errorbar(mean_scores.index, mean_scores.values, yerr=std_scores.values,
-                 marker='o', color='blue', capsize=5)
+    # Get unique distance metrics
+    metrics = results['distance_metric'].unique()
 
-    plt.title('Performance by K Value\nMushroom Dataset')
+    # Define colors for different metrics
+    colors = ['blue', 'red', 'green']
+    if len(metrics) > len(colors):
+        colors = colors * (len(metrics) // len(colors) + 1)
+
+    # Plot line for each distance metric
+    for metric, color in zip(metrics, colors):
+        metric_data = results[results['distance_metric'] == metric]
+        mean_scores = metric_data.groupby('k')['mean_accuracy'].mean()
+        std_scores = metric_data.groupby('k')['std_accuracy'].mean()
+
+        plt.errorbar(mean_scores.index, mean_scores.values,
+                     yerr=std_scores.values,
+                     marker='o',
+                     color=color,
+                     capsize=5,
+                     label=metric)
+
+    plt.title('Performance by K Value and Distance Metric\nMushroom Dataset')
     plt.xlabel('K Value')
     plt.ylabel('Mean Accuracy')
-    plt.grid(True)
-    plt.savefig(os.path.join(plots_path, 'k_vs_accuracy.png'), bbox_inches='tight', dpi=300)
+    plt.grid(True, alpha=0.3)
+    plt.legend(title='Distance Metric')
+
+    # Adjust layout to prevent legend cutoff
+    plt.tight_layout()
+
+    plt.savefig(os.path.join(plots_path, 'k_vs_accuracy_by_metric.png'),
+                bbox_inches='tight',
+                dpi=300)
     plt.close()
 
 
@@ -75,51 +104,51 @@ def plot_heatmap(results: pd.DataFrame, plots_path: str):
     plt.close()
 
 
-def analyze_top_configurations(results: pd.DataFrame, top_n: int = 5):
-    """Analyze and print top configurations"""
-    top_configs = results.nlargest(top_n, 'mean_accuracy')
-
-    print(f"\nTop {top_n} KNN Configurations:")
-
-    for idx, row in top_configs.iterrows():
-        print(f"\nRank {idx + 1}")
-        print(f"Mean Accuracy: {row['mean_accuracy']:.4f} (±{row['std_accuracy']:.4f})")
-        print(f"Mean F1 Score: {row['mean_f1']:.4f} (±{row['std_f1']:.4f})")
-        print(f"Mean Training Time: {row['mean_time']:.4f} seconds")
-        print(f"Configuration:")
-        print(f"  k: {row['k']}")
-        print(f"  Distance Metric: {row['distance_metric']}")
-        print(f"  Weighting Method: {row['weighting_method']}")
-        print(f"  Voting Policy: {row['voting_policy']}")
-
-
-def statistical_analysis(results: pd.DataFrame):
-    """Perform and print statistical analysis of parameters"""
-    print("\nStatistical Analysis of Parameters:")
-    print("\nBest parameters by category (averaged over other parameters):")
-
-    # Best k
-    k_stats = results.groupby('k')['mean_accuracy'].agg(['mean', 'std']).round(4)
-    best_k = k_stats['mean'].idxmax()
-    print(f"\nBest k: {best_k} (accuracy: {k_stats.loc[best_k, 'mean']:.4f} ± {k_stats.loc[best_k, 'std']:.4f})")
-
-    # Best distance metric
-    metric_stats = results.groupby('distance_metric')['mean_accuracy'].agg(['mean', 'std']).round(4)
-    best_metric = metric_stats['mean'].idxmax()
-    print(
-        f"Best distance metric: {best_metric} (accuracy: {metric_stats.loc[best_metric, 'mean']:.4f} ± {metric_stats.loc[best_metric, 'std']:.4f})")
-
-    # Best weighting method
-    weight_stats = results.groupby('weighting_method')['mean_accuracy'].agg(['mean', 'std']).round(4)
-    best_weight = weight_stats['mean'].idxmax()
-    print(
-        f"Best weighting method: {best_weight} (accuracy: {weight_stats.loc[best_weight, 'mean']:.4f} ± {weight_stats.loc[best_weight, 'std']:.4f})")
-
-    # Best voting policy
-    vote_stats = results.groupby('voting_policy')['mean_accuracy'].agg(['mean', 'std']).round(4)
-    best_vote = vote_stats['mean'].idxmax()
-    print(
-        f"Best voting policy: {best_vote} (accuracy: {vote_stats.loc[best_vote, 'mean']:.4f} ± {vote_stats.loc[best_vote, 'std']:.4f})")
+# def analyze_top_configurations(results: pd.DataFrame, top_n: int = 5):
+#     """Analyze and print top configurations"""
+#     top_configs = results.nlargest(top_n, 'mean_accuracy')
+#
+#     print(f"\nTop {top_n} KNN Configurations:")
+#
+#     for idx, row in top_configs.iterrows():
+#         print(f"\nRank {idx + 1}")
+#         print(f"Mean Accuracy: {row['mean_accuracy']:.4f} (±{row['std_accuracy']:.4f})")
+#         print(f"Mean F1 Score: {row['mean_f1']:.4f} (±{row['std_f1']:.4f})")
+#         print(f"Mean Training Time: {row['mean_time']:.4f} seconds")
+#         print(f"Configuration:")
+#         print(f"  k: {row['k']}")
+#         print(f"  Distance Metric: {row['distance_metric']}")
+#         print(f"  Weighting Method: {row['weighting_method']}")
+#         print(f"  Voting Policy: {row['voting_policy']}")
+#
+#
+# def statistical_analysis(results: pd.DataFrame):
+#     """Perform and print statistical analysis of parameters"""
+#     print("\nStatistical Analysis of Parameters:")
+#     print("\nBest parameters by category (averaged over other parameters):")
+#
+#     # Best k
+#     k_stats = results.groupby('k')['mean_accuracy'].agg(['mean', 'std']).round(4)
+#     best_k = k_stats['mean'].idxmax()
+#     print(f"\nBest k: {best_k} (accuracy: {k_stats.loc[best_k, 'mean']:.4f} ± {k_stats.loc[best_k, 'std']:.4f})")
+#
+#     # Best distance metric
+#     metric_stats = results.groupby('distance_metric')['mean_accuracy'].agg(['mean', 'std']).round(4)
+#     best_metric = metric_stats['mean'].idxmax()
+#     print(
+#         f"Best distance metric: {best_metric} (accuracy: {metric_stats.loc[best_metric, 'mean']:.4f} ± {metric_stats.loc[best_metric, 'std']:.4f})")
+#
+#     # Best weighting method
+#     weight_stats = results.groupby('weighting_method')['mean_accuracy'].agg(['mean', 'std']).round(4)
+#     best_weight = weight_stats['mean'].idxmax()
+#     print(
+#         f"Best weighting method: {best_weight} (accuracy: {weight_stats.loc[best_weight, 'mean']:.4f} ± {weight_stats.loc[best_weight, 'std']:.4f})")
+#
+#     # Best voting policy
+#     vote_stats = results.groupby('voting_policy')['mean_accuracy'].agg(['mean', 'std']).round(4)
+#     best_vote = vote_stats['mean'].idxmax()
+#     print(
+#         f"Best voting policy: {best_vote} (accuracy: {vote_stats.loc[best_vote, 'mean']:.4f} ± {vote_stats.loc[best_vote, 'std']:.4f})")
 
 
 def create_performance_plots(results: pd.DataFrame, aggregated_results: pd.DataFrame, plots_path: str):
@@ -250,7 +279,7 @@ def create_pairplot(data: pd.DataFrame, plots_path: str):
 def main():
     # Paths
     csv_path = 'knn_base_results.csv'
-    plots_path = '..\\Mushroom\\plots_and_tables\\knn_base_analysis'
+    plots_path = '..\\Mushroom\\plots_and_tables\\knn_base'
 
     # Create plots folder
     create_plots_folder(plots_path)
@@ -265,8 +294,8 @@ def main():
     create_pairplot(results, plots_path)
 
     # Print analyses
-    analyze_top_configurations(aggregated_results)
-    statistical_analysis(aggregated_results)
+    # analyze_top_configurations(aggregated_results)
+    # statistical_analysis(aggregated_results)
 
 
 if __name__ == "__main__":

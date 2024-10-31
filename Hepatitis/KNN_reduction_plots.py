@@ -42,7 +42,7 @@ def plot_reduction_accuracy_comparison(results: pd.DataFrame, plots_path: str):
     """Plot comparison of reduction methods' accuracies"""
     plt.figure(figsize=(10, 6))
     sns.boxplot(x='reduction', y='Accuracy', data=results)
-    plt.title('Accuracy Distribution by Reduction Method\nMushroom Dataset')
+    plt.title('Accuracy Distribution by Reduction Method\nHepatitis Dataset')
     plt.xlabel('Reduction Method')
     plt.ylabel('Accuracy')
     plt.xticks(rotation=45)
@@ -55,7 +55,7 @@ def plot_time_comparison(aggregated_results: pd.DataFrame, plots_path: str):
     """Plot time comparison across reduction methods"""
     plt.figure(figsize=(10, 6))
     sns.barplot(x='reduction', y='mean_time', data=aggregated_results)
-    plt.title('Average Execution Time by Reduction Method\nMushroom Dataset')
+    plt.title('Average Execution Time by Reduction Method\nHepatitis Dataset')
     plt.xlabel('Reduction Method')
     plt.ylabel('Mean Execution Time (seconds)')
     plt.xticks(rotation=45)
@@ -100,15 +100,15 @@ def plot_storage_comparison(sample_counts: pd.DataFrame, plots_path: str):
     plt.close()
 
 
-def analyze_reduction_methods(aggregated_results: pd.DataFrame):
-    """Analyze and print statistics for each reduction method"""
-    print("\nReduction Methods Analysis:")
-
-    for _, row in aggregated_results.iterrows():
-        print(f"\nReduction Method: {row['reduction']}")
-        print(f"Mean Accuracy: {row['mean_accuracy']:.4f} (±{row['std_accuracy']:.4f})")
-        print(f"Mean F1 Score: {row['mean_f1']:.4f} (±{row['std_f1']:.4f})")
-        print(f"Mean Execution Time: {row['mean_time']:.4f} seconds")
+# def analyze_reduction_methods(aggregated_results: pd.DataFrame):
+#     """Analyze and print statistics for each reduction method"""
+#     print("\nReduction Methods Analysis:")
+#
+#     for _, row in aggregated_results.iterrows():
+#         print(f"\nReduction Method: {row['reduction']}")
+#         print(f"Mean Accuracy: {row['mean_accuracy']:.4f} (±{row['std_accuracy']:.4f})")
+#         print(f"Mean F1 Score: {row['mean_f1']:.4f} (±{row['std_f1']:.4f})")
+#         print(f"Mean Execution Time: {row['mean_time']:.4f} seconds")
 
 
 def create_comparison_plots(results: pd.DataFrame, plots_path: str):
@@ -142,35 +142,35 @@ def create_comparison_plots(results: pd.DataFrame, plots_path: str):
     plt.close()
 
 
-def statistical_comparison(results: pd.DataFrame):
-    """Perform statistical comparison between reduction methods"""
-    print("\nStatistical Comparison of Reduction Methods:")
-
-    # Overall rankings
-    print("\nOverall Rankings (averaged across all configurations):")
-    rankings = results.groupby('reduction').agg({
-        'Accuracy': ['mean', 'std'],
-        'Time': 'mean',
-        'F1': ['mean', 'std']
-    }).round(4)
-
-    print("\nBy Accuracy:")
-    accuracy_ranking = rankings['Accuracy']['mean'].sort_values(ascending=False)
-    for idx, (reduction, acc) in enumerate(accuracy_ranking.items(), 1):
-        std = rankings.loc[reduction, ('Accuracy', 'std')]
-        print(f"{idx}. {reduction}: {acc:.4f} (±{std:.4f})")
-
-    print("\nBy Execution Time:")
-    time_ranking = rankings['Time']['mean'].sort_values()
-    for idx, (reduction, time) in enumerate(time_ranking.items(), 1):
-        print(f"{idx}. {reduction}: {time:.4f} seconds")
+# def statistical_comparison(results: pd.DataFrame):
+#     """Perform statistical comparison between reduction methods"""
+#     print("\nStatistical Comparison of Reduction Methods:")
+#
+#     # Overall rankings
+#     print("\nOverall Rankings (averaged across all configurations):")
+#     rankings = results.groupby('reduction').agg({
+#         'Accuracy': ['mean', 'std'],
+#         'Time': 'mean',
+#         'F1': ['mean', 'std']
+#     }).round(4)
+#
+#     print("\nBy Accuracy:")
+#     accuracy_ranking = rankings['Accuracy']['mean'].sort_values(ascending=False)
+#     for idx, (reduction, acc) in enumerate(accuracy_ranking.items(), 1):
+#         std = rankings.loc[reduction, ('Accuracy', 'std')]
+#         print(f"{idx}. {reduction}: {acc:.4f} (±{std:.4f})")
+#
+#     print("\nBy Execution Time:")
+#     time_ranking = rankings['Time']['mean'].sort_values()
+#     for idx, (reduction, time) in enumerate(time_ranking.items(), 1):
+#         print(f"{idx}. {reduction}: {time:.4f} seconds")
 
 
 def main():
     # Paths
     csv_path = 'knn_reduction_results.csv'
     counts_path = 'knn_reduction_counts.csv'
-    plots_path = '..\\Mushroom\\plots_and_tables\\knn_reduction'
+    plots_path = '..\\Hepatitis\\plots_and_tables\\knn_reduction'
 
     # Create plots folder
     create_plots_folder(plots_path)
@@ -186,8 +186,8 @@ def main():
     plot_storage_comparison(sample_counts, plots_path)
 
     # Print analyses
-    analyze_reduction_methods(aggregated_results)
-    statistical_comparison(results)
+    # analyze_reduction_methods(aggregated_results)
+    # statistical_comparison(results)
 
 
 if __name__ == "__main__":
