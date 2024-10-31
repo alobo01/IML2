@@ -97,7 +97,7 @@ def main(dataset_path):
         print(f"Evaluating method: {method}")
 
         # Parallel execution using ThreadPoolExecutor for each fold
-        with ThreadPoolExecutor(max_workers=4) as executor:
+        with ThreadPoolExecutor(max_workers=1) as executor:
             futures = [
                 executor.submit(process_fold, fold_number, dataset_path, method)
                 for fold_number in range(n_folds)
