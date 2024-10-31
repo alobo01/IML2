@@ -50,7 +50,7 @@ def plot_k_vs_accuracy(results: pd.DataFrame, plots_path: str):
     plt.errorbar(mean_scores.index, mean_scores.values, yerr=std_scores.values,
                  marker='o', color='blue', capsize=5)
 
-    plt.title('Performance by K Value\nHepatitis Dataset')
+    plt.title('Performance by K Value\nMushroom Dataset')
     plt.xlabel('K Value')
     plt.ylabel('Mean Accuracy')
     plt.grid(True)
