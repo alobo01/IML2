@@ -148,38 +148,6 @@ def filter_top_models(prev_results_dataframe, kernel_def, c_value_def):
 
     return filtered_dataframe
 
-# 1. Compare 16 algorithms over the 10 folds of the dataset hepatitis
-
-dataset_path = '..\\Hepatitis'
-prev_results = previous_analysis(dataset_path)
-np.savetxt("pre_analysis.txt", prev_results[0], fmt="%s", delimiter=" , ")
-
-# 2. I substract the 5 better pairs of kernels and C values according to their accuracies
-
-#prev_results[1].to_csv('svm_hepatitis_results.csv', index=False)
-kernel_def, c_value_def = find_top_five(prev_results[0])
-best_five_algo=filter_top_models(prev_results[1],kernel_def,c_value_def)
-# best_five_algo.to_csv('svm_hepatitis_results.csv', index=False)
-
-# 3. I apply the Friedman-Nemenyi test to obtain the best model
-
-# Selecting the columns and rearranging them with 'Fold' as the first column
-df_1 = best_five_algo[['Fold', 'Model', 'Accuracy']]
-
-# Apply tests
-test_results_1 = statisticalAnalysis.select_and_apply_test(df_1)
-
-# Plot with conclusions including Nemenyi test if applicable
-best_SVM_algo=statisticalAnalysis.plot_conclusions_with_nemenyi(df_1, test_results_1)
-# Filter the DataFrame to keep only rows with 'SVM, kernel=linear, C=1.0' in the 'Model' column
-best_algo=best_five_algo[best_five_algo['Model'] == best_SVM_algo]
-best_algo.to_csv('svm_hepatitis_results.csv', index=False)
-print(best_SVM_algo)
-
-
-# 4. I study the accuracy, performance and f1 of the SELECTED model in
-# the 10 initial folds + 10 reduced folds for the 3 methods of reduction (over 40 folds in total)
-
 def total_analysis(best_model,dataset_path_ff):
     # Add reduction methods (None means original dataset)
     parts = str(best_model).split(", ")
@@ -217,11 +185,41 @@ def total_analysis(best_model,dataset_path_ff):
 
     return pd.DataFrame(metrics)
 
+# 1. Compare 16 algorithms over the 10 folds of the dataset hepatitis
+
+dataset_path = '..\\Hepatitis'
+prev_results = previous_analysis(dataset_path)
+np.savetxt("pre_analysis.txt", prev_results[0], fmt="%s", delimiter=" , ")
+
+# 2. I substract the 5 better pairs of kernels and C values according to their accuracies
+
+#prev_results[1].to_csv('svm_hepatitis_results.csv', index=False)
+kernel_def, c_value_def = find_top_five(prev_results[0])
+best_five_algo=filter_top_models(prev_results[1],kernel_def,c_value_def)
+# best_five_algo.to_csv('svm_hepatitis_results.csv', index=False)
+
+# 3. I apply the Friedman-Nemenyi test to obtain the best model
+
+# Selecting the columns and rearranging them with 'Fold' as the first column
+df_1 = best_five_algo[['Fold', 'Model', 'Accuracy']]
+
+# Apply tests
+test_results_1 = statisticalAnalysis.select_and_apply_test(df_1)
+
+# Plot with conclusions including Nemenyi test if applicable
+best_SVM_algo=statisticalAnalysis.plot_conclusions_with_nemenyi(df_1, test_results_1)
+# Filter the DataFrame to keep only rows with 'SVM, kernel=linear, C=1.0' in the 'Model' column
+best_algo=best_five_algo[best_five_algo['Model'] == best_SVM_algo]
+best_algo.to_csv('svm_hepatitis_results.csv', index=False)
+print(best_SVM_algo)
+
+# 4. I study the accuracy, performance and f1 of the SELECTED model in
+# the 10 initial folds + 10 reduced folds for the 3 methods of reduction (over 40 folds in total)
+
 best_algo_reduced= total_analysis(best_SVM_algo,dataset_path)
 best_algo_reduced.to_csv('svm_hepatitis_results.csv', mode='a', index=False, header=False)
 # Concatenate the results
 combined_panda = pd.concat([best_algo, best_algo_reduced], ignore_index=True)
-
 
 # 5. I apply the Friedman + Nemenyi test to get the best reduction method.
 df_2 = combined_panda[['Fold', 'Model', 'Accuracy']]
