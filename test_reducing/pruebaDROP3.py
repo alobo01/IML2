@@ -3,14 +3,26 @@ import matplotlib.pyplot as plt
 from sklearn.datasets import make_blobs
 from sklearn.neighbors import KNeighborsClassifier, NearestNeighbors
 from matplotlib import colormaps
-
+from scipy.io import arff
+import pandas as pd
 # Generate synthetic dataset
-X, y = make_blobs(n_samples=300, centers=[[0, 0], [1, 1]], random_state=42, cluster_std=0.5)
+#X, y = make_blobs(n_samples=300, centers=[[0, 0], [1, 1]], random_state=42, cluster_std=0.5)
+from sklearn.preprocessing import LabelEncoder
+
+label_encoder = LabelEncoder()
+
+# Load the ARFF file
+data, meta = arff.loadarff('grid.fold.000000.train.arff')
+df = pd.DataFrame(data)
+X, y = df.drop("class", axis=1).values, df["class"].values
+
+y = label_encoder.fit_transform(y)
 
 # Create a color dictionary from the colormap
 unique_classes = np.unique(y)
 cmap = colormaps['prism']
 color_dict = {cls: cmap(i / len(unique_classes)) for i, cls in enumerate(unique_classes)}
+
 
 
 def enn_filter(X, y, k=3):

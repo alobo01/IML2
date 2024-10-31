@@ -292,14 +292,14 @@ class ReductionKNN:
                     class_count[label] -= 1  # Update class count after removal
                 continue
 
-
+            temp_keep = keep_indices.copy()
             # With sample
-            self.reducedKNN.fit(features, labels)
+            self.reducedKNN.fit(features.iloc[temp_keep], labels.iloc[temp_keep])
             y_pred_with = self.reducedKNN.predict(features.iloc[associate_indices])
             correct_with = np.sum(y_pred_with == y_assoc)
 
             # Without sample
-            temp_keep = keep_indices.copy()
+
             temp_keep[idx] = False
             self.reducedKNN.fit(features.iloc[temp_keep], labels.iloc[temp_keep])
             y_pred_without = self.reducedKNN.predict(features.iloc[associate_indices])
