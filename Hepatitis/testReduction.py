@@ -53,8 +53,10 @@ def process_fold(fold_number, dataset_path, method):
     train_features, train_labels, test_features, test_labels = load_fold_data(fold_number, dataset_path)
 
     # Initialize original KNN
-    ogKNN = KNNAlgorithm(k=3)
+    ogKNN = KNNAlgorithm(k=7, distance_metric='manhattan_distance')
     ogKNN.fit(train_features, train_labels)
+    reducedKNN = KNNAlgorithm(k=7, distance_metric='manhattan_distance')
+
     if method == 'None':
         model = ogKNN
         reduction_percentage = 100
@@ -63,7 +65,7 @@ def process_fold(fold_number, dataset_path, method):
         train_labels_reduced = train_labels
     else:
         start = time.time()
-        reduction_knn = ReductionKNN(ogKNN, ogKNN)
+        reduction_knn = ReductionKNN(ogKNN, reducedKNN)
         reduced_data = reduction_knn.apply_reduction(pd.concat([train_features, train_labels], axis=1), method)
         reduction_time = time.time() - start
         reduced_data.to_csv(f"ReducedFolds/hepatitis.fold.{fold_number:06d}.train.{method}.csv")
