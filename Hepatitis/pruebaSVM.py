@@ -6,7 +6,11 @@ import numpy as np
 import pickle
 from tqdm import tqdm
 from typing import Dict, List, Tuple, Optional
-import statisticalAnalysis
+import svm_base_analysis
+from scipy import stats
+from scikit_posthocs import posthoc_nemenyi_friedman
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 # STEPS:
 # 1. Compare 16 algorithms over the 10 folds of the dataset hepatitis
@@ -86,17 +90,16 @@ def previous_analysis(dataset_path_f):
 
                 metrics.append({
                     'Model': model,
-                    'Fold': n,
+                    'Dataset/Fold': f"Hepatitis/{n}",
                     'Reduction': None,
                     'Accuracy': evaluation[0],
                     'Time': evaluation[1],
-                    'F1': evaluation[2],
-                    'recall': evaluation[3]
+                    'F1': evaluation[2]
+                    #'recall': evaluation[3]
                 })
                 # evaluation[3] is the recall
                 print(f'Model {model}, for hepatitis/{n} trained and saved.')
             results[i+1,j+1]=np.mean(prev_accuracy)
-            print('accuracy of ',kernels[i],' ',c_values[j],' retrieved')
 
     print('Previous analysis done in order to find the best parameters for the dataset.')
     return results, pd.DataFrame(metrics)
@@ -128,19 +131,18 @@ def find_top_five(results_f):
 
     return kernel_tags, c_value_tags
 
-def filter_top_models(prev_results_dataframe, kernel_def, c_value_def):
+def filter_top_models(prev_results_dataframe, kernel_def_fff, c_value_def_fff):
     # Create an empty list to store the filtered rows
     filtered_rows = []
-
     # Iterate through the top 5 models
     for i in range(5):
         # Create the model string pattern
-        model_pattern = f"SVM, kernel={kernel_def[i]}, C={c_value_def[i]:.1f}"
+        model_pattern = f"SVM, kernel={kernel_def_fff[i]}, C={c_value_def_fff[i]:.1f}"
 
-            # Filter rows matching this model
+        # Filter rows matching this model
         matching_rows = prev_results_dataframe[prev_results_dataframe['Model'] == model_pattern]
 
-            # Add matching rows to the list
+        # Add matching rows to the list
         filtered_rows.append(matching_rows)
 
         # Concatenate all matching rows into a single DataFrame
@@ -148,11 +150,21 @@ def filter_top_models(prev_results_dataframe, kernel_def, c_value_def):
 
     return filtered_dataframe
 
-def total_analysis(best_model,dataset_path_ff):
+def filter_top_model(prev_results_dataframe, kernel_def_fff, c_value_def_fff):
+    # Create the model string pattern
+    model_pattern = f"SVM, kernel={kernel_def_fff}, C={c_value_def_fff:.1f}"
+
+    # Filter rows matching this model
+    matching_rows = prev_results_dataframe[prev_results_dataframe['Model'] == model_pattern]
+
+    return matching_rows
+
+def total_analysis(kernel_def_f,c_value_def_f,dataset_path_ff):
     # Add reduction methods (None means original dataset)
-    parts = str(best_model).split(", ")
-    kernel_def_f = parts[1].split("=")[1]  # Extracts the kernel
-    c_value_def_f = float(parts[2].split("=")[1]) # Extracts the C value
+    #parts = str(best_model).split(", ")
+    #kernel_def_f = parts[1].split("=")[1]  # Extracts the kernel
+    #c_value_def_f = float(parts[2].split("=")[1]) # Extracts the C value
+    c_value_def_f=float(c_value_def_f)
     reduction_methods_f = ['EENTH', 'GCNN', 'DROP3']
     metrics = []
 
@@ -173,12 +185,13 @@ def total_analysis(best_model,dataset_path_ff):
             evaluation=svm_classifier.evaluate(x_test, y_test)
 
             metrics.append({
-                    'Model': model+', '+reduction_desc,
-                    'Fold': fold,
+                    'Model': model,
+                    'Dataset/Fold': f"Hepatitis/{fold}",
+                    'reduction_method':reduction_desc,
                     'Accuracy': evaluation[0],
                     'Time': evaluation[1],
-                    'F1': evaluation[2],
-                    'recall': evaluation[3]
+                    'F1': evaluation[2]
+                    #'recall': evaluation[3]
             })
                 # evaluation[3] is the recall
             print(f'Model {model}, for hepatitis/{fold} and {reduction_desc} trained and saved.')
@@ -193,39 +206,39 @@ np.savetxt("pre_analysis.txt", prev_results[0], fmt="%s", delimiter=" , ")
 
 # 2. I substract the 5 better pairs of kernels and C values according to their accuracies
 
-#prev_results[1].to_csv('svm_hepatitis_results.csv', index=False)
 kernel_def, c_value_def = find_top_five(prev_results[0])
 best_five_algo=filter_top_models(prev_results[1],kernel_def,c_value_def)
-# best_five_algo.to_csv('svm_hepatitis_results.csv', index=False)
+best_five_algo.to_csv('svm_hepatitis_results_best5.csv', index=False)
 
 # 3. I apply the Friedman-Nemenyi test to obtain the best model
 
-# Selecting the columns and rearranging them with 'Fold' as the first column
-df_1 = best_five_algo[['Fold', 'Model', 'Accuracy']]
+csv_path = "svm_hepatitis_results_best5.csv"
+output_path = "plots_and_tables\\svm_base\\statistical_analysis_results.png"
 
-# Apply tests
-test_results_1 = statisticalAnalysis.select_and_apply_test(df_1)
+if not svm_base_analysis.analyze_model_performance(csv_path,output_path):
+    print("It is concluded that there is no statistical difference between models.")
+else:
+    print("It is concluded that there is statistical difference between models.")
+    svm_base_analysis.main(csv_path, output_path)
 
-# Plot with conclusions including Nemenyi test if applicable
-best_SVM_algo=statisticalAnalysis.plot_conclusions_with_nemenyi(df_1, test_results_1)
-# Filter the DataFrame to keep only rows with 'SVM, kernel=linear, C=1.0' in the 'Model' column
-best_algo=best_five_algo[best_five_algo['Model'] == best_SVM_algo]
-best_algo.to_csv('svm_hepatitis_results.csv', index=False)
-print(best_SVM_algo)
+# We will work with the model that presents higher accuracy
+best_SVM_algo = filter_top_model(prev_results[1], kernel_def[0], c_value_def[0])
+best_SVM_algo.to_csv('svm_hepatitis_results.csv', index=False)
 
-# 4. I study the accuracy, performance and f1 of the SELECTED model in
-# the 10 initial folds + 10 reduced folds for the 3 methods of reduction (over 40 folds in total)
+# 4. I study the accuracy, time and f1 of the SELECTED model in 10 reduced folds for each of the 3 methods of reduction
+# (over 30 folds in total)
 
-best_algo_reduced= total_analysis(best_SVM_algo,dataset_path)
-best_algo_reduced.to_csv('svm_hepatitis_results.csv', mode='a', index=False, header=False)
-# Concatenate the results
-combined_panda = pd.concat([best_algo, best_algo_reduced], ignore_index=True)
+best_algo_reduced= total_analysis(kernel_def[0],c_value_def[0],dataset_path)
+best_algo_reduced.to_csv('svm_hepatitis_results_reduced.csv', index=False, header=False)
 
 # 5. I apply the Friedman + Nemenyi test to get the best reduction method.
-df_2 = combined_panda[['Fold', 'Model', 'Accuracy']]
+csv_path = "svm_hepatitis_results_reduced.csv"
+output_path = "plots_and_tables\\svm_base\\statistical_analysis_results_reduced.png"
 
-# Apply tests
-test_results_2 = statisticalAnalysis.select_and_apply_test(df_2)
+if not svm_base_analysis.analyze_model_performance(csv_path,output_path):
+    print("It is concluded that there is no statistical difference between models.")
+else:
+    print("It is concluded that there is statistical difference between models.")
+    svm_base_analysis.main(csv_path, output_path)
 
-# Plot with conclusions including Nemenyi test if applicable
-best_SVM_algo_2=statisticalAnalysis.plot_conclusions_with_nemenyi(df_2, test_results_2)
+
