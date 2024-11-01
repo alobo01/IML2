@@ -1,20 +1,9 @@
-import pandas as pd
-from Tools.scripts.fixdiv import report
-
-from classes.Reader import DataPreprocessor
-from classes.SVM import SVM
 import os
+from typing import Tuple, Optional
 import numpy as np
-import pickle
-from tqdm import tqdm
-from typing import Dict, List, Tuple, Optional
+import pandas as pd
 import svm_base_analysis
-from scipy import stats
-from scikit_posthocs import posthoc_nemenyi_friedman
-import matplotlib.pyplot as plt
-import seaborn as sns
-
-from test_reducing.pruebaDROP3 import reduction
+from classes.SVM import SVM
 
 
 # STEPS:
@@ -189,7 +178,7 @@ def total_analysis(kernel_def_f,c_value_def_f,dataset_path_ff):
             evaluation=svm_classifier.evaluate(x_test, y_test)
 
             metrics.append({
-                    'Model': model+ +reduction_desc,
+                    'Model': model + reduction_desc,
                     'Dataset/Fold': f"Hepatitis/{fold}",
                     'Accuracy': evaluation[0],
                     'Time': evaluation[1],
