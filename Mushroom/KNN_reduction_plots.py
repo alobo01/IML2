@@ -165,6 +165,51 @@ def statistical_comparison(results: pd.DataFrame):
     for idx, (reduction, time) in enumerate(time_ranking.items(), 1):
         print(f"{idx}. {reduction}: {time:.4f} seconds")
 
+def plot_efficiency_comparison(results: pd.DataFrame, sample_counts: pd.DataFrame, plots_path: str):
+    """
+    Plot accuracy per training sample for each reduction method.
+    This shows how efficiently each method uses its training samples to achieve accuracy.
+    """
+    # Calculate average accuracy for each reduction method
+    avg_accuracy = results.groupby('reduction')['Accuracy'].mean()
+
+    # Calculate average number of training samples for each reduction method
+    avg_samples = sample_counts.groupby('Reduction Method')['Training Samples'].mean()
+
+    # Calculate efficiency (accuracy per sample)
+    efficiency = {}
+    for method in avg_accuracy.index:
+        # Match the method name in sample_counts (which uses uppercase)
+        samples_method = method.upper()
+        if samples_method in avg_samples.index:
+            # Multiply by 100 to make the values more readable
+            efficiency[method] = (avg_accuracy[method] * 100) / avg_samples[samples_method]
+
+    # Create the plot
+    plt.figure(figsize=(10, 6))
+    methods = list(efficiency.keys())
+    efficiencies = list(efficiency.values())
+
+    bars = plt.bar(methods, efficiencies)
+
+    # Add value labels on top of each bar
+    for bar in bars:
+        height = bar.get_height()
+        plt.text(bar.get_x() + bar.get_width() / 2., height,
+                 f'{height:.2e}',
+                 ha='center', va='bottom')
+
+    plt.title('Accuracy per Training Sample by Reduction Method\nHepatitis Dataset')
+    plt.xlabel('Reduction Method')
+    plt.ylabel('Efficiency (Accuracy % per Training Sample)')
+    plt.xticks(rotation=45)
+    plt.grid(axis='y', linestyle='--', alpha=0.7)
+    plt.tight_layout()
+
+    plt.savefig(os.path.join(plots_path, 'reduction_efficiency_comparison.png'),
+                bbox_inches='tight', dpi=300)
+    plt.close()
+
 
 def main():
     # Paths
@@ -184,6 +229,7 @@ def main():
     plot_time_comparison(aggregated_results, plots_path)
     create_comparison_plots(results, plots_path)
     plot_storage_comparison(sample_counts, plots_path)
+    plot_efficiency_comparison(results, sample_counts, plots_path)
 
     # Print analyses
     analyze_reduction_methods(aggregated_results)

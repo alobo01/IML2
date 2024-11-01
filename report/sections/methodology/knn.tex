@@ -1,2 +1,67 @@
 \subsection{K-Nearest Neighbors (KNN)}
-Explain the KNN approach applied.
+
+The implementation of the KNN algorithm is encapsulated in the \texttt{KNNAlgorithm} class. It allows the selection of different distance metrics, weighting methods, and voting policies to classify test instances using their nearest neighbors. The methodology follows these three main components.
+
+\subsubsection{Hyperparameters}
+\begin{enumerate}
+    \item \textbf{k:}
+    \begin{itemize}
+        \item The number of Nearest Neighbors to be considered in the algorithm. This can take any integer value. In our study, we have employed values $ 1, 3, 5 \text{ and } 7 $.
+    \end{itemize}
+
+    \item \textbf{Distance Metrics:}
+    \begin{itemize}
+        \item \textbf{Euclidean Distance}: Calculates the root of the sum of squared differences between feature values. It is commonly used for continuous data and defined as:
+        \[
+        d(x, y) = \sqrt{\sum_{i=1}^{n} (x_i - y_i)^2}
+        \]
+        \item \textbf{Manhattan Distance}: Computes the sum of absolute differences between feature values, suitable for both categorical and continuous data. It is defined as:
+        \[
+        d(x, y) = \sum_{i=1}^{n} |x_i - y_i|
+        \]
+        \item \textbf{Clark Distance}: Accounts for proportional differences between feature values, enhancing interpretability for attributes with varying scales. It is computed as:
+        \[
+        d(x, y) = \sqrt{\sum_{i=1}^{n} \left(\frac{|x_i - y_i|}{x_i + y_i + \epsilon}\right)^2}
+        \]
+        where $\epsilon$ is a small constant to avoid division by zero.
+    \end{itemize}
+
+    \item \textbf{Weighting Methods:}
+    \begin{itemize}
+        \item \textbf{Equal Weight}: Assigns equal importance to all features by setting each feature's weight to 1.
+        \item \textbf{Information Gain Weight}: Uses mutual information to assign weights based on each feature's information gain with respect to the class label.
+        \item \textbf{ReliefF Weight}: Computes feature relevance by evaluating differences between feature values of similar and dissimilar instances, adjusted by the specified number of neighbors.
+    \end{itemize}
+
+    \item \textbf{Voting Policies:}
+    \begin{itemize}
+        \item \textbf{Majority Class}: Assigns the class based on the most common class label among the nearest neighbors.
+        \item \textbf{Inverse Distance Weighted}: Weights each neighbor’s vote by the inverse of its distance, giving more influence to closer neighbors. The vote for class $y$ is calculated as:
+        \[
+        \text{Vote}_y = \sum_{i \in \mathcal{N}_y} \frac{1}{d(q, x_i)}
+        \]
+        where $\mathcal{N}_y$ represents neighbors with class $y$.
+        \item \textbf{Shepard's Work}: Similar to the Inverse Distance Weighted policy, except that it applies exponential decay to the distance (instead of the inverse), allowing stronger influence from closer neighbors. The vote for class $y$ is:
+        \[
+        \text{Vote}_y = \sum_{i \in \mathcal{N}_y} e^{-d(q, x_i)}
+        \]
+    \end{itemize}
+\end{enumerate}
+
+This structure enables flexible configurations for analyzing the performance of the KNN algorithm across different datasets and hyperparameter values.
+
+\subsubsection{Results extraction}
+
+To systematically evaluate the KNN model configurations, the following procedure is followed to extract results for each of the 2 data sets, in order to later perform an statistical analysis:
+
+\begin{enumerate}
+    \item \textbf{Data Preparation}: Each fold of the dataset is loaded, split into training and testing sets. Features may also be weighted using different weighting methods to analyze their impact on model performance. This is applied as a pre-processing step in order to optimize execution times.
+
+    \item \textbf{Parameter Configuration}: A comprehensive set of values for the KNN hyperparameters is defined. These combinations reflect various ways to tune the KNN model.
+
+    \item \textbf{Model Evaluation}: For each fold and parameter combination, the KNN model is trained on the training data and evaluated on the test data. This step yields the following metrics: accuracy, execution time, and F1-score. Together, these measure the model’s effectiveness and efficiency.
+
+    \item \textbf{Results Compilation}: The performance metrics for each parameter combination and fold are recorded in a structured format. These results are saved as a dataset that summarizes the outcomes of all evaluations, forming a basis for analysis.
+
+    \item \textbf{Statistical Analysis}: After results are compiled across all configurations and folds, statistical analysis is performed to identify the best-performing configurations. This analysis helps determine the most reliable and effective parameter settings for accurate and efficient KNN classification. We will discuss our results in Section \ref{sec:results}.
+\end{enumerate}
