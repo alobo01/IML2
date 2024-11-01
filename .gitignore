@@ -161,3 +161,7 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea sections.
 .idea/
 
+report/main.aux
+report/main.fdb_latexmk
+report/main.fls
+report/main.synctex.gz
