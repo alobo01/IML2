@@ -103,7 +103,6 @@ def analyze_model_performance(csv_path,output_path,report_output_path,alpha):
         ax1.grid(True)
 
         plt.tight_layout()
-        plt.show()
         fig.savefig(output_path)
 
         print(f"p-value of {friedman_p_value} was obtained after performing the friedman_statistic test.")
@@ -172,7 +171,6 @@ def main(csv_path, output_path=None):
         fig = visualize_results(summary_stats, friedman_result, nemenyi_matrix)
         if output_path:
             fig.savefig(output_path)
-        plt.show()
 
 
 # Example usage:

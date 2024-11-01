@@ -8,19 +8,19 @@ Model: SVM, kernel=sigmoid, C=100.0
 Mean Accuracy: 0.8507
 Std Accuracy: 0.0987
 Mean F1 Score: 0.9083
-Mean Time: 0.0012
+Mean Time: 0.0016
 
 Model: SVM, kernel=poly, C=10.0
 Mean Accuracy: 0.8455
 Std Accuracy: 0.0893
 Mean F1 Score: 0.9051
-Mean Time: 0.0007
+Mean Time: 0.0017
 
 Model: SVM, kernel=sigmoid, C=10.0
 Mean Accuracy: 0.8400
 Std Accuracy: 0.1080
 Mean F1 Score: 0.9006
-Mean Time: 0.0007
+Mean Time: 0.0014
 
 Model: SVM, kernel=linear, C=1.0
 Mean Accuracy: 0.8263
@@ -32,7 +32,7 @@ Model: SVM, kernel=rbf, C=10.0
 Mean Accuracy: 0.8263
 Std Accuracy: 0.0927
 Mean F1 Score: 0.8918
-Mean Time: 0.0010
+Mean Time: 0.0012
 
 Friedman Test Results
 --------------------
