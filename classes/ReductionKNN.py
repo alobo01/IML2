@@ -251,7 +251,8 @@ class ReductionKNN:
         Returns:
         - list: The indices of the points in the original dataset that should be kept.
         """
-
+        if self.originalKNN.k != k:
+            k = self.originalKNN.k
         # First step, apply a single ENN pass to remove noisy points
         enn_keeped_indices = self.fast_enn(features, labels)
         features = features.loc[enn_keeped_indices]
@@ -464,6 +465,9 @@ class ReductionKNN:
         Returns:
             Filtered features and labels after removing instances that do not meet the classification criteria.
         """
+
+        if self.originalKNN.k != k:
+            k = self.originalKNN.k
 
         # Step 1: Retrieve all neighbors and distances at once
         results = self.originalKNN.get_neighbors(features, custom_k=k + 1, return_distances=True)
