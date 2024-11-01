@@ -1,0 +1,19 @@
+Statistical Analysis Report - distance_metric
+==================================================
+
+Summary Statistics
+-----------------
+                      mean     std
+distance_metric                   
+clark_distance      0.7913  0.0919
+euclidean_distance  0.8085  0.0880
+manhattan_distance  0.8051  0.0853
+
+Friedman Test Results
+--------------------
+Test Statistic: 2.5714
+P-value: 0.2765
+Significance level (alpha): 0.2
+
+No significant differences were found between the configurations at the 0.2 significance level.
+Post-hoc test was not performed.

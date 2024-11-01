@@ -1,0 +1,62 @@
+Statistical Analysis Report
+=========================
+
+Top Models Performance Summary
+--------------------------
+
+Model: KNN, 7, manhattan_distance, equal_weight, majority_class
+Mean Accuracy: 0.8519
+Std Accuracy: 0.0645
+Mean F1 Score: 0.8377
+Mean Time: 0.0041
+
+Model: KNN, 7, euclidean_distance, equal_weight, majority_class
+Mean Accuracy: 0.8511
+Std Accuracy: 0.0672
+Mean F1 Score: 0.8354
+Mean Time: 0.0041
+
+Model: KNN, 7, clark_distance, reliefF_weight, shepard
+Mean Accuracy: 0.8502
+Std Accuracy: 0.0833
+Mean F1 Score: 0.8394
+Mean Time: 0.0018
+
+Model: KNN, 7, clark_distance, reliefF_weight, majority_class
+Mean Accuracy: 0.8440
+Std Accuracy: 0.0779
+Mean F1 Score: 0.8318
+Mean Time: 0.0045
+
+Model: KNN, 5, clark_distance, reliefF_weight, inverse_distance_weighted
+Mean Accuracy: 0.8397
+Std Accuracy: 0.0757
+Mean F1 Score: 0.8275
+Mean Time: 0.0023
+
+Model: KNN, 5, clark_distance, reliefF_weight, majority_class
+Mean Accuracy: 0.8397
+Std Accuracy: 0.0757
+Mean F1 Score: 0.8275
+Mean Time: 0.0050
+
+Model: KNN, 7, euclidean_distance, information_gain_weight, majority_class
+Mean Accuracy: 0.8396
+Std Accuracy: 0.0917
+Mean F1 Score: 0.8313
+Mean Time: 0.0039
+
+Model: KNN, 7, euclidean_distance, information_gain_weight, shepard
+Mean Accuracy: 0.8396
+Std Accuracy: 0.0917
+Mean F1 Score: 0.8313
+Mean Time: 0.0048
+
+Friedman Test Results
+--------------------
+Test Statistic: 0.4251
+P-value: 0.9997
+Significance level (alpha): 0.2
+
+No significant differences were found between the models at the 0.2 significance level.
+Nemenyi post-hoc test was not performed.
