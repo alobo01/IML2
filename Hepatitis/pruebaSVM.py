@@ -1,4 +1,6 @@
 import pandas as pd
+from Tools.scripts.fixdiv import report
+
 from classes.Reader import DataPreprocessor
 from classes.SVM import SVM
 import os
@@ -11,6 +13,9 @@ from scipy import stats
 from scikit_posthocs import posthoc_nemenyi_friedman
 import matplotlib.pyplot as plt
 import seaborn as sns
+
+from test_reducing.pruebaDROP3 import reduction
+
 
 # STEPS:
 # 1. Compare 16 algorithms over the 10 folds of the dataset hepatitis
@@ -91,7 +96,6 @@ def previous_analysis(dataset_path_f):
                 metrics.append({
                     'Model': model,
                     'Dataset/Fold': f"Hepatitis/{n}",
-                    'Reduction': None,
                     'Accuracy': evaluation[0],
                     'Time': evaluation[1],
                     'F1': evaluation[2]
@@ -185,9 +189,8 @@ def total_analysis(kernel_def_f,c_value_def_f,dataset_path_ff):
             evaluation=svm_classifier.evaluate(x_test, y_test)
 
             metrics.append({
-                    'Model': model,
+                    'Model': model+ +reduction_desc,
                     'Dataset/Fold': f"Hepatitis/{fold}",
-                    'reduction_method':reduction_desc,
                     'Accuracy': evaluation[0],
                     'Time': evaluation[1],
                     'F1': evaluation[2]
@@ -214,8 +217,10 @@ best_five_algo.to_csv('svm_hepatitis_results_best5.csv', index=False)
 
 csv_path = "svm_hepatitis_results_best5.csv"
 output_path = "plots_and_tables\\svm_base\\statistical_analysis_results.png"
+report_output_path="plots_and_tables\\svm_base\\statistical_analysis_results.txt"
+alpha=0.1 # for the test
 
-if not svm_base_analysis.analyze_model_performance(csv_path,output_path):
+if not svm_base_analysis.analyze_model_performance(csv_path,output_path,report_output_path,alpha):
     print("It is concluded that there is no statistical difference between models.")
 else:
     print("It is concluded that there is statistical difference between models.")
@@ -223,22 +228,24 @@ else:
 
 # We will work with the model that presents higher accuracy
 best_SVM_algo = filter_top_model(prev_results[1], kernel_def[0], c_value_def[0])
-best_SVM_algo.to_csv('svm_hepatitis_results.csv', index=False)
+best_SVM_algo.to_csv('svm_hepatitis_results_best1.csv', index=False)
 
 # 4. I study the accuracy, time and f1 of the SELECTED model in 10 reduced folds for each of the 3 methods of reduction
 # (over 30 folds in total)
 
 best_algo_reduced= total_analysis(kernel_def[0],c_value_def[0],dataset_path)
-best_algo_reduced.to_csv('svm_hepatitis_results_reduced.csv', index=False, header=False)
+best_algo_reduced.to_csv('svm_hepatitis_results_reduced.csv', index=False)
 
 # 5. I apply the Friedman + Nemenyi test to get the best reduction method.
 csv_path = "svm_hepatitis_results_reduced.csv"
 output_path = "plots_and_tables\\svm_base\\statistical_analysis_results_reduced.png"
+report_output_path="plots_and_tables\\svm_base\\statistical_analysis_results_reduced.txt"
+alpha=0.1 # for the test
 
-if not svm_base_analysis.analyze_model_performance(csv_path,output_path):
-    print("It is concluded that there is no statistical difference between models.")
-else:
-    print("It is concluded that there is statistical difference between models.")
-    svm_base_analysis.main(csv_path, output_path)
+#if not svm_base_analysis.analyze_model_performance(csv_path,output_path,report_output_path,alpha):
+#    print("It is concluded that there is no statistical difference between models.")
+#else:
+#    print("It is concluded that there is statistical difference between models.")
+#    svm_base_analysis.main(csv_path, output_path)
 
 

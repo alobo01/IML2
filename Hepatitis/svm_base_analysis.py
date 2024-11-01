@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 
-def analyze_model_performance(csv_path,output_path):
+def analyze_model_performance(csv_path,output_path,report_output_path,alpha):
     """
     Analyze model performance using Friedman and Nemenyi tests.
 
@@ -55,9 +55,33 @@ def analyze_model_performance(csv_path,output_path):
     print(f"Statistic: {friedman_statistic:.4f}")
     print(f"p-value: {friedman_p_value:.4f}")
 
-    if friedman_p_value >= 0.1:
+    # generate a .txt report with the statistical analysis obtained
+
+    with open(report_output_path, 'w') as f:
+        # Write header
+        f.write("Statistical Analysis Report\n")
+        f.write("=========================\n\n")
+
+        # Top Models Section
+        f.write("Top Models Performance Summary\n")
+        f.write("--------------------------\n")
+        for model in summary_stats.index:
+            f.write(f"\nModel: {model}\n")
+            f.write(f"Mean Accuracy: {summary_stats.loc[model, 'Mean Accuracy']:.4f}\n")
+            f.write(f"Std Accuracy: {summary_stats.loc[model, 'Std Accuracy']:.4f}\n")
+            f.write(f"Mean F1 Score: {summary_stats.loc[model, 'Mean F1']:.4f}\n")
+            f.write(f"Mean Time: {summary_stats.loc[model, 'Mean Time']:.4f}\n")
+
+        # Friedman Test Results
+        f.write("\nFriedman Test Results\n")
+        f.write("--------------------\n")
+        f.write(f"Test Statistic: {friedman_statistic:.4f}\n")
+        f.write(f"P-value: {friedman_p_value:.4f}\n")
+        f.write(f"Significance level (alpha): {alpha}\n")
+
+    if friedman_p_value >= alpha:
         # Create figure with subplots
-        fig, ax1 = plt.subplots(1, 1, figsize=(7,6))
+        fig, ax1 = plt.subplots(1, 1, figsize=(6,6))
 
         # Plot mean accuracy with error bars
         models = summary_stats.index
@@ -89,6 +113,18 @@ def analyze_model_performance(csv_path,output_path):
     else:
         # Perform Nemenyi post-hoc test only when we discard the null hypothesis
         nemenyi_result = posthoc_nemenyi_friedman(pivot_df)
+
+        with open(report_output_path, "a") as f:
+            # Nemenyi Test Results
+            f.write("\nNemenyi Test P-values\n")
+            f.write("-------------------\n")
+            f.write("Lower values indicate more significant differences between models\n\n")
+
+            # Format Nemenyi matrix as a table
+            models = nemenyi_result.index
+            f.write("Model Pairs" + " " * 30 + "P-value\n")
+            f.write("-" * 50 + "\n")
+
         return summary_stats, (friedman_statistic, friedman_p_value), nemenyi_result
 
 
