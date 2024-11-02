@@ -23,22 +23,23 @@ def load_fold_data(fold_number: int, dataset_path: str, reduction_method: Option
     """
     if reduction_method:
         train_path = os.path.join(dataset_path, 'ReducedFolds')
-        train_file = os.path.join(train_path, f'hepatitis.fold.{fold_number:06d}.train.{reduction_method}.csv')
+        train_file = os.path.join(train_path, f'mushroom.fold.{fold_number:06d}.train.{reduction_method}.csv')
     else:
         train_path = os.path.join(dataset_path, 'preprocessed_csvs')
-        train_file = os.path.join(train_path, f'hepatitis.fold.{fold_number:06d}.train.csv')
+        train_file = os.path.join(train_path, f'mushroom.fold.{fold_number:06d}.train.csv')
 
     train_data = pd.read_csv(train_file)
     train_data = train_data.drop('Unnamed: 0', axis=1)
+    if reduction_method: train_data = train_data.drop('Unnamed: 0.1', axis=1)
 
-    test_file = os.path.join(dataset_path, 'preprocessed_csvs', f'hepatitis.fold.{fold_number:06d}.test.csv')
+    test_file = os.path.join(dataset_path, 'preprocessed_csvs', f'mushroom.fold.{fold_number:06d}.test.csv')
     test_data = pd.read_csv(test_file)
     test_data = test_data.drop('Unnamed: 0', axis=1)
 
-    train_features = train_data.drop('Class', axis=1)
-    train_labels = train_data['Class']
-    test_features = test_data.drop('Class', axis=1)
-    test_labels = test_data['Class']
+    train_features = train_data.drop('class', axis=1)
+    train_labels = train_data['class']
+    test_features = test_data.drop('class', axis=1)
+    test_labels = test_data['class']
 
     return train_features, train_labels, test_features, test_labels
 
@@ -121,7 +122,7 @@ def run_reduction_experiments(dataset_path: str, knn_config: Dict):
 
             results.append({
                 'Model': model_name,
-                'Dataset/Fold': f"Hepatitis/{fold}",
+                'Dataset/Fold': f"Mushroom/{fold}",
                 'Accuracy': accuracy,
                 'Time': train_time,
                 'F1': f1
@@ -139,7 +140,7 @@ def run_reduction_experiments(dataset_path: str, knn_config: Dict):
 
 
 if __name__ == "__main__":
-    dataset_path = '..\\Hepatitis'
+    dataset_path = '..\\Mushroom'
 
     # Define a specific KNN configuration to test with reduction methods
     knn_config = {
