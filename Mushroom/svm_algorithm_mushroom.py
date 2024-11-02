@@ -271,4 +271,4 @@ best_algo_reduced = total_analysis(kernel_def[0], float(c_value_def[0]), dataset
 best_algo_reduced_and_non_red = pd.concat([df, best_algo_reduced], ignore_index=True)
 best_algo_reduced_and_non_red.to_csv('svm_mushroom_results_reduced.csv', index=False)
 
-# Note: Further analysis of reduction methods can be performed by running svm_reduction_analysis.py
+# Note: Further analysis of reduction methods can be performed by running svm_analysis_reduced_m.py

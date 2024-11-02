@@ -3,7 +3,6 @@ from typing import Tuple, Optional
 import numpy as np
 import pandas as pd
 import svm_base_analysis
-from Hepatitis.svm_reduction_analysis import ReductionMethodAnalyzer
 from classes.SVM import SVM
 
 """
@@ -269,4 +268,4 @@ best_algo_reduced = total_analysis(kernel_def[0], c_value_def[0], dataset_path)
 best_algo_reduced_and_non_red = pd.concat([df, best_algo_reduced], ignore_index=True)
 best_algo_reduced_and_non_red.to_csv('svm_hepatitis_results_reduced.csv', index=False)
 
-# Note: Further analysis of reduction methods can be performed by running svm_reduction_analysis.py
+# Note: Further analysis of reduction methods can be performed by running svm_reduction_analysis_bis.py

@@ -9,16 +9,16 @@ Mean Accuracy: 0.8507
 Std Accuracy: 0.0987
 Mean F1 Score: 0.9083
 Std F1 Score: 0.0597
-Mean Time: 0.0006
-Std Time: 0.0005
+Mean Time: 0.0008
+Std Time: 0.0004
 
 Model: SVM, kernel=poly, C=10.0
 Mean Accuracy: 0.8455
 Std Accuracy: 0.0893
 Mean F1 Score: 0.9051
 Std F1 Score: 0.0543
-Mean Time: 0.0008
-Std Time: 0.0005
+Mean Time: 0.0010
+Std Time: 0.0006
 
 Model: SVM, kernel=sigmoid, C=10.0
 Mean Accuracy: 0.8400
@@ -26,23 +26,23 @@ Std Accuracy: 0.1080
 Mean F1 Score: 0.9006
 Std F1 Score: 0.0655
 Mean Time: 0.0005
-Std Time: 0.0007
+Std Time: 0.0005
 
 Model: SVM, kernel=linear, C=1.0
 Mean Accuracy: 0.8263
 Std Accuracy: 0.1090
 Mean F1 Score: 0.8923
 Std F1 Score: 0.0656
-Mean Time: 0.0011
-Std Time: 0.0006
+Mean Time: 0.0008
+Std Time: 0.0005
 
 Model: SVM, kernel=rbf, C=10.0
 Mean Accuracy: 0.8263
 Std Accuracy: 0.0927
 Mean F1 Score: 0.8918
 Std F1 Score: 0.0575
-Mean Time: 0.0011
-Std Time: 0.0006
+Mean Time: 0.0007
+Std Time: 0.0005
 
 Friedman Test Results
 --------------------
