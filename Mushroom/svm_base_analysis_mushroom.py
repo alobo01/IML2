@@ -158,7 +158,7 @@ def main(csv_path, output_path=None):
     Main function to run the analysis and save results.
     """
     # Perform analysis
-    if not analyze_model_performance(csv_path):
+    if not analyze_model_performance(csv_pathoutput_path,report_output_path,alpha):
         print(' ')
     else:
         summary_stats, friedman_result, nemenyi_matrix = analyze_model_performance(csv_path)

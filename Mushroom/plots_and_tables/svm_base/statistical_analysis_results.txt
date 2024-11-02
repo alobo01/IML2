@@ -1,0 +1,48 @@
+Statistical Analysis Report
+=========================
+
+Top Models Performance Summary
+--------------------------
+
+Model: SVM, kernel=linear, C=1.0
+Mean Accuracy: 1.0000
+Std Accuracy: 0.0000
+Mean F1 Score: 1.0000
+Mean Time: 0.0046
+
+Model: SVM, kernel=linear, C=10.0
+Mean Accuracy: 1.0000
+Std Accuracy: 0.0000
+Mean F1 Score: 1.0000
+Mean Time: 0.0031
+
+Model: SVM, kernel=linear, C=100.0
+Mean Accuracy: 1.0000
+Std Accuracy: 0.0000
+Mean F1 Score: 1.0000
+Mean Time: 0.0040
+
+Model: SVM, kernel=rbf, C=10.0
+Mean Accuracy: 1.0000
+Std Accuracy: 0.0000
+Mean F1 Score: 1.0000
+Mean Time: 0.0078
+
+Model: SVM, kernel=rbf, C=100.0
+Mean Accuracy: 1.0000
+Std Accuracy: 0.0000
+Mean F1 Score: 1.0000
+Mean Time: 0.0091
+
+Friedman Test Results
+--------------------
+Test Statistic: nan
+P-value: nan
+Significance level (alpha): 0.1
+
+Nemenyi Test P-values
+-------------------
+Lower values indicate more significant differences between models
+
+Model Pairs                              P-value
+--------------------------------------------------
