@@ -8,71 +8,78 @@ Model: SVM, kernel=linear, C=1.0
 Mean Accuracy: 1.0000
 Std Accuracy: 0.0000
 Mean F1 Score: 1.0000
-Mean Time: 0.0042
+Std F1 Score: 0.0000
+Mean Time: 0.0037
+Std Time: 0.0024
 
 Model: SVM, kernel=linear, C=10.0
 Mean Accuracy: 1.0000
 Std Accuracy: 0.0000
 Mean F1 Score: 1.0000
-Mean Time: 0.0030
+Std F1 Score: 0.0000
+Mean Time: 0.0025
+Std Time: 0.0008
 
 Model: SVM, kernel=rbf, C=100.0
 Mean Accuracy: 1.0000
 Std Accuracy: 0.0000
 Mean F1 Score: 1.0000
-Mean Time: 0.0068
+Std F1 Score: 0.0000
+Mean Time: 0.0060
+Std Time: 0.0005
 
 Model: SVM, kernel=linear, C=100.0
 Mean Accuracy: 1.0000
 Std Accuracy: 0.0000
 Mean F1 Score: 1.0000
-Mean Time: 0.0034
+Std F1 Score: 0.0000
+Mean Time: 0.0040
+Std Time: 0.0022
 
 Model: SVM, kernel=poly, C=10.0
 Mean Accuracy: 1.0000
 Std Accuracy: 0.0000
 Mean F1 Score: 1.0000
-Mean Time: 0.0023
+Std F1 Score: 0.0000
+Mean Time: 0.0024
+Std Time: 0.0009
 
 Model: SVM, kernel=poly, C=100.0
 Mean Accuracy: 1.0000
 Std Accuracy: 0.0000
 Mean F1 Score: 1.0000
+Std F1 Score: 0.0000
 Mean Time: 0.0036
+Std Time: 0.0025
 
 Model: SVM, kernel=rbf, C=10.0
 Mean Accuracy: 1.0000
 Std Accuracy: 0.0000
 Mean F1 Score: 1.0000
-Mean Time: 0.0062
+Std F1 Score: 0.0000
+Mean Time: 0.0066
+Std Time: 0.0010
 
 Model: SVM, kernel=rbf, C=1.0
 Mean Accuracy: 0.9994
 Std Accuracy: 0.0010
 Mean F1 Score: 0.9994
-Mean Time: 0.0211
+Std F1 Score: 0.0011
+Mean Time: 0.0198
+Std Time: 0.0021
 
 Model: SVM, kernel=poly, C=1.0
 Mean Accuracy: 0.9978
 Std Accuracy: 0.0015
 Mean F1 Score: 0.9977
-Mean Time: 0.0060
+Std F1 Score: 0.0016
+Mean Time: 0.0047
+Std Time: 0.0004
 
 Model: SVM, kernel=linear, C=0.1
 Mean Accuracy: 0.9920
 Std Accuracy: 0.0037
 Mean F1 Score: 0.9916
-Mean Time: 0.0056
-
-Friedman Test Results
---------------------
-Test Statistic: 80.4336
-P-value: 0.0000
-Significance level (alpha): 0.1
-
-Nemenyi Test P-values
--------------------
-Lower values indicate more significant differences between models
-
-Model Pairs                              P-value
---------------------------------------------------
+Std F1 Score: 0.0039
+Mean Time: 0.0047
+Std Time: 0.0006
