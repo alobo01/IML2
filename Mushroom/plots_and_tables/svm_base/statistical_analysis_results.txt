@@ -8,36 +8,66 @@ Model: SVM, kernel=linear, C=1.0
 Mean Accuracy: 1.0000
 Std Accuracy: 0.0000
 Mean F1 Score: 1.0000
-Mean Time: 0.0046
+Mean Time: 0.0042
 
 Model: SVM, kernel=linear, C=10.0
 Mean Accuracy: 1.0000
 Std Accuracy: 0.0000
 Mean F1 Score: 1.0000
-Mean Time: 0.0031
-
-Model: SVM, kernel=linear, C=100.0
-Mean Accuracy: 1.0000
-Std Accuracy: 0.0000
-Mean F1 Score: 1.0000
-Mean Time: 0.0040
-
-Model: SVM, kernel=rbf, C=10.0
-Mean Accuracy: 1.0000
-Std Accuracy: 0.0000
-Mean F1 Score: 1.0000
-Mean Time: 0.0078
+Mean Time: 0.0030
 
 Model: SVM, kernel=rbf, C=100.0
 Mean Accuracy: 1.0000
 Std Accuracy: 0.0000
 Mean F1 Score: 1.0000
-Mean Time: 0.0091
+Mean Time: 0.0068
+
+Model: SVM, kernel=linear, C=100.0
+Mean Accuracy: 1.0000
+Std Accuracy: 0.0000
+Mean F1 Score: 1.0000
+Mean Time: 0.0034
+
+Model: SVM, kernel=poly, C=10.0
+Mean Accuracy: 1.0000
+Std Accuracy: 0.0000
+Mean F1 Score: 1.0000
+Mean Time: 0.0023
+
+Model: SVM, kernel=poly, C=100.0
+Mean Accuracy: 1.0000
+Std Accuracy: 0.0000
+Mean F1 Score: 1.0000
+Mean Time: 0.0036
+
+Model: SVM, kernel=rbf, C=10.0
+Mean Accuracy: 1.0000
+Std Accuracy: 0.0000
+Mean F1 Score: 1.0000
+Mean Time: 0.0062
+
+Model: SVM, kernel=rbf, C=1.0
+Mean Accuracy: 0.9994
+Std Accuracy: 0.0010
+Mean F1 Score: 0.9994
+Mean Time: 0.0211
+
+Model: SVM, kernel=poly, C=1.0
+Mean Accuracy: 0.9978
+Std Accuracy: 0.0015
+Mean F1 Score: 0.9977
+Mean Time: 0.0060
+
+Model: SVM, kernel=linear, C=0.1
+Mean Accuracy: 0.9920
+Std Accuracy: 0.0037
+Mean F1 Score: 0.9916
+Mean Time: 0.0056
 
 Friedman Test Results
 --------------------
-Test Statistic: nan
-P-value: nan
+Test Statistic: 80.4336
+P-value: 0.0000
 Significance level (alpha): 0.1
 
 Nemenyi Test P-values

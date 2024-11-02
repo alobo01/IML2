@@ -78,7 +78,7 @@ def perform_wilcoxon_test(svm_values, knn_values, metric_name, logger):
 
 def main():
     # File paths
-    svm_file = "svm_hepatitis_results_best1.csv"
+    svm_file = "svm_mushroom_results_best1.csv"
     knn_file = "top_knn_results.csv"
 
     # Create timestamp for the results file
@@ -89,7 +89,7 @@ def main():
     logger = Logger(results_file)
 
     # Write header information
-    logger.write("Wilcoxon Test Results to compare the best SVM algorithm and the best KNN algorithm for Hepatitis")
+    logger.write("Wilcoxon Test Results to compare the best SVM algorithm and the best KNN algorithm for Mushroom")
     logger.write("===================")
     logger.write(f"Analysis performed on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     logger.write(f"SVM data file: {svm_file}")

@@ -3,6 +3,7 @@ from scipy import stats
 from scikit_posthocs import posthoc_nemenyi_friedman
 import matplotlib.pyplot as plt
 import seaborn as sns
+import numpy as np
 
 
 def analyze_model_performance(csv_path,output_path,report_output_path,alpha):
@@ -18,9 +19,15 @@ def analyze_model_performance(csv_path,output_path,report_output_path,alpha):
     # Read the CSV file
     df = pd.read_csv(csv_path)
 
+    accuracy_values = df['Accuracy']
+
+    if np.ptp(accuracy_values) < 0.1:  # np.ptp() gives the range (max - min) of values
+        print("Skipping Friedman test due to low accuracy variation.")
+        return None  # or any other appropriate response for skipped test
+
     # Calculate average accuracy for each model
     avg_performance = df.groupby('Model')['Accuracy'].mean().sort_values(ascending=False)
-    top_models = avg_performance.head(8).index.tolist()
+    top_models = avg_performance.head(5).index.tolist()
 
     # Filter data for Top models
     top_df = df[df['Model'].isin(top_models)]
@@ -153,15 +160,16 @@ def visualize_results(summary_stats, friedman_result, nemenyi_matrix):
     return fig
 
 
-def main(csv_path, output_path=None):
+def main(csv_path, output_path, report_output_path, alpha):
     """
     Main function to run the analysis and save results.
     """
     # Perform analysis
-    if not analyze_model_performance(csv_path):
+    if not analyze_model_performance(csv_path,output_path, report_output_path, alpha):
         print(' ')
     else:
-        summary_stats, friedman_result, nemenyi_matrix = analyze_model_performance(csv_path)
+        summary_stats, friedman_result, nemenyi_matrix = analyze_model_performance(csv_path,output_path,
+                                                                                   report_output_path, alpha)
 
         print("\nNemenyi Test Results (p-values):")
         print(nemenyi_matrix.round(4))

@@ -254,7 +254,7 @@ if not svm_base_analysis.analyze_model_performance(csv_path, output_path, report
     print("It is concluded that there is no statistical difference between models.")
 else:
     print("It is concluded that there is statistical difference between models.")
-    svm_base_analysis.main(csv_path, output_path)
+    svm_base_analysis.main(csv_path, output_path, report_output_path, alpha)
 
 # 4. Select and analyze best performing configuration
 best_SVM_algo = filter_top_model(prev_results[1], kernel_def[0], c_value_def[0])
