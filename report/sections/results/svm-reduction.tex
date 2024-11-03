@@ -4,7 +4,7 @@ The best model for each dataset was trained and tested on the reduced dataset ob
 \subsubsection{Hepatitis}
 The SVM model with hyperparameters `kernel=sigmoid` and `C=100.0` was trained and tested on the reduced data samples obtained for each reduction method (DROP3, EENTH, and GCNN). The mean values of the evaluated statistical metrics are presented in Table \ref{tab:reduction_help}. Again, the Friedman test was conducted, yielding a $p$-value of 0.0057 for accuracy and 0.0210 for the F1-score. Due to these low values, the null hypothesis was rejected, and a post-hoc test was implemented. The Nemenyi test was chosen to identify specific differences between methods. Significant differences were found between EENTH and GCNN, and also between GCNN and NONE (understanding NONE as the original dataset without any reduction method), as it can be seen in the Figure \ref{fig:hep_svm_red} 
 
-\begin{table}[h!]
+\begin{table}[ht]
 \centering
 \begin{tabular}{|l|c|c|c|}
 \hline
