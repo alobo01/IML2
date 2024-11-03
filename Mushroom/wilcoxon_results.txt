@@ -1,6 +1,6 @@
 Wilcoxon Test Results to compare the best SVM algorithm and the best KNN algorithm for Mushroom
 ===================
-Analysis performed on: 2024-11-02 17:35:49
+Analysis performed on: 2024-11-03 12:04:43
 SVM data file: svm_mushroom_results_best1.csv
 KNN data file: top_knn_results.csv
 
@@ -22,7 +22,7 @@ Statistical results for Time:
 ----------------------------------------
 
 Mean Time:
-SVM: 0.0029 +- 0.0008
+SVM: 0.0041 +- 0.0021
 KNN: 2.0015 +- 0.7602
 
 Wilcoxon Signed-Rank Test Results for Time:
