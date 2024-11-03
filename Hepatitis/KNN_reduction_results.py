@@ -140,15 +140,17 @@ def run_reduction_experiments(dataset_path: str, knn_config: Dict):
 
 if __name__ == "__main__":
     dataset_path = '..\\Hepatitis'
+else:
+    dataset_path = 'Hepatitis'
 
-    # Define a specific KNN configuration to test with reduction methods
-    knn_config = {
-        'k': 7,
-        'distance_metric': 'manhattan_distance',
-        'weighting_method': 'equal_weight',
-        'voting_policy': 'majority_class'
-    }
+# Define a specific KNN configuration to test with reduction methods
+knn_config = {
+    'k': 7,
+    'distance_metric': 'manhattan_distance',
+    'weighting_method': 'equal_weight',
+    'voting_policy': 'majority_class'
+}
 
-    results, counts = run_reduction_experiments(dataset_path, knn_config)
-    results.to_csv('knn_reduction_results.csv', index=False)
-    counts.to_csv('knn_reduction_counts.csv', index=False)
+results, counts = run_reduction_experiments(dataset_path, knn_config)
+results.to_csv('knn_reduction_results.csv', index=False)
+counts.to_csv('knn_reduction_counts.csv', index=False)

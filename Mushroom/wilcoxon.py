@@ -2,6 +2,7 @@ import pandas as pd
 from scipy import stats
 import numpy as np
 from datetime import datetime
+import os
 
 
 class Logger:
@@ -67,7 +68,7 @@ def perform_wilcoxon_test(svm_values, knn_values, metric_name, logger):
     logger.write("\nInterpretation:")
     if p_value < alpha:
         logger.write(f"There is a significant difference between the models (p < {alpha})")
-        if metric_name == 'Time':
+        if metric_name=='Time':
             if svm_mean < knn_mean:
                 logger.write(f"SVM performed significantly better than KNN for {metric_name}")
             else:
@@ -83,47 +84,51 @@ def perform_wilcoxon_test(svm_values, knn_values, metric_name, logger):
     logger.write("\n" + "=" * 60 + "\n")
 
 
-def main():
-    # File paths
-    svm_file = "svm_mushroom_results_best1.csv"
-    knn_file = "top_knn_results.csv"
-
-    # Create timestamp for the results file
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    results_file = f"wilcoxon_results.txt"
-
-    # Initialize logger
-    logger = Logger(results_file)
-
-    # Write header information
-    logger.write("Wilcoxon Test Results to compare the best SVM algorithm and the best KNN algorithm for Mushroom")
-    logger.write("===================")
-    logger.write(f"Analysis performed on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    logger.write(f"SVM data file: {svm_file}")
-    logger.write(f"KNN data file: {knn_file}")
-    logger.write("\n")
-
-    # Metrics to analyze
-    metrics = ['Accuracy', 'Time', 'F1']
-
-    try:
-        # Perform analysis for each metric
-        for metric in metrics:
-            logger.write(f"\nAnalyzing {metric}...")
-            svm_values, knn_values = load_and_prepare_data(svm_file, knn_file, metric)
-            perform_wilcoxon_test(svm_values, knn_values, metric, logger)
-
-        # Save all results to file
-        logger.save()
-        print(f"Results have been saved to: {results_file}")
-
-    except Exception as e:
-        error_msg = f"An error occurred: {str(e)}"
-        logger.write(error_msg)
-        logger.save()
-        print(error_msg)
-        print(f"Error details have been saved to: {results_file}")
-
 
 if __name__ == "__main__":
-    main()
+    dataset_path = '..\\Mushroom'
+else:
+    dataset_path = 'Mushroom'
+
+# File paths
+svm_file = os.path.join(dataset_path, "svm_mushroom_results_best1.csv")
+knn_file = os.path.join(dataset_path, "top_knn_results.csv")
+
+# Create timestamp for the results file
+timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+results_file = os.path.join(dataset_path, "wilcoxon_results.txt")
+
+# Initialize logger
+logger = Logger(results_file)
+
+# Write header information
+logger.write("Wilcoxon Test Results to compare the best SVM algorithm and the best KNN algorithm for Mushroom")
+logger.write("===================")
+logger.write(f"Analysis performed on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+logger.write(f"SVM data file: {svm_file}")
+logger.write(f"KNN data file: {knn_file}")
+logger.write("\n")
+
+# Metrics to analyze
+metrics = ['Accuracy', 'Time', 'F1']
+
+try:
+    # Perform analysis for each metric
+    for metric in metrics:
+        logger.write(f"\nAnalyzing {metric}...")
+        svm_values, knn_values = load_and_prepare_data(svm_file, knn_file, metric)
+        perform_wilcoxon_test(svm_values, knn_values, metric, logger)
+
+    # Save all results to file
+    logger.save()
+    with open(results_file, 'r') as file:
+        logs = file.read()
+        print(logs)
+    print(f"Results have been saved to: {results_file}")
+
+except Exception as e:
+    error_msg = f"An error occurred: {str(e)}"
+    logger.write(error_msg)
+    logger.save()
+    print(error_msg)
+    print(f"Error details have been saved to: {results_file}")

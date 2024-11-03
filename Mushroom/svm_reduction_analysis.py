@@ -1,3 +1,4 @@
+import os
 import pandas as pd
 from scipy import stats
 from scikit_posthocs import posthoc_nemenyi_friedman
@@ -17,7 +18,7 @@ def load_and_prepare_data(filename):
     return df, accuracy_matrix
 
 
-def save_mean_metrics(df, filename):
+def save_mean_metrics(df, dataset_path):
     # Calculate mean metrics for each method
     mean_metrics = df.groupby('Method').agg({
         'Accuracy': ['mean', 'std'],
@@ -31,7 +32,8 @@ def save_mean_metrics(df, filename):
                             'Mean_Time', 'Std_Time']
 
     # Save to file
-    with open(f"plots_and_tables/svm_reduction/{filename}_mean_metrics.txt", 'w') as f:
+    file_path = os.path.join(dataset_path, "plots_and_tables/svm_reduction/svm_results_mean_metrics.txt")
+    with open(file_path, 'w') as f:
         f.write("Mean Metrics by Method\n")
         f.write("=====================\n\n")
         f.write(mean_metrics.to_string())
@@ -48,25 +50,28 @@ def perform_nemenyi_test(accuracy_matrix):
     return posthoc_nemenyi_friedman(accuracy_matrix)
 
 
-def create_boxplot(df, filename):
+def create_boxplot(df, dataset_path):
     plt.figure(figsize=(10, 6))
     sns.boxplot(x='Method', y='Accuracy', data=df)
     plt.xticks(rotation=45)
     plt.tight_layout()
-    plt.savefig(f"plots_and_tables/svm_reduction/{filename}_boxplot.png")
+    plot_path = os.path.join(dataset_path, "plots_and_tables/svm_reduction/svm_results_boxplot.png")
+    plt.savefig(plot_path)
     plt.close()
 
 
-def create_heatmap(nemenyi_matrix, filename):
+def create_heatmap(nemenyi_matrix, dataset_path):
     plt.figure(figsize=(10, 8))
     sns.heatmap(nemenyi_matrix, annot=True, cmap='RdYlBu', center=0.5)
     plt.tight_layout()
-    plt.savefig(f"plots_and_tables/svm_reduction/{filename}_heatmap.png")
+    plot_path = os.path.join(dataset_path, "plots_and_tables/svm_reduction/svm_results_heatmap.png")
+    plt.savefig(plot_path)
     plt.close()
 
 
-def write_results(filename, friedman_stat, friedman_p, accuracy_matrix, nemenyi_matrix=None):
-    with open(f"plots_and_tables/svm_reduction/{filename}_analysis.txt", 'w') as f:
+def write_results(dataset_path, friedman_stat, friedman_p, accuracy_matrix, nemenyi_matrix=None):
+    file_path = os.path.join(dataset_path, "plots_and_tables/svm_reduction/svm_results_analysis.txt")
+    with open(file_path, 'w') as f:
         f.write("Statistical Analysis of SVM Results\n")
         f.write("==================================\n\n")
 
@@ -109,24 +114,33 @@ def write_results(filename, friedman_stat, friedman_p, accuracy_matrix, nemenyi_
         else:
             f.write("The Friedman test shows no significant differences between methods (p >= 0.05).\n")
 
+    with open(file_path, 'r') as file:
+        logs = file.read()
+        print(logs)
 
-def main():
-    # Load and prepare data
-    df, accuracy_matrix = load_and_prepare_data('svm_mushroom_results_reduced.csv')
 
-    # Always save mean metrics regardless of other tests
-    mean_metrics = save_mean_metrics(df, 'svm_results')
+if __name__ == "__main__":
+    dataset_path = '..\\Mushroom'
+else:
+    dataset_path = 'Mushroom'
 
-    # Create boxplot regardless of other tests
-    create_boxplot(df, 'svm_results')
+data_path = os.path.join(dataset_path, 'svm_mushroom_results_reduced.csv')
+# Load and prepare data
+df, accuracy_matrix = load_and_prepare_data(data_path)
 
-    accuracy_values = df['Accuracy']
+# Always save mean metrics regardless of other tests
+mean_metrics = save_mean_metrics(df, dataset_path)
 
-    # Check if we should perform statistical tests
-    if np.ptp(accuracy_values) < 0.1:  # np.ptp() gives the range (max - min) of values
-        print("Skipping Friedman test due to low accuracy variation.")
-        return
+# Create boxplot regardless of other tests
+create_boxplot(df, dataset_path)
 
+accuracy_values = df['Accuracy']
+
+# Check if we should perform statistical tests
+if np.ptp(accuracy_values) < 0.1:  # np.ptp() gives the range (max - min) of values
+    print("Skipping Friedman test due to low accuracy variation.")
+
+else:
     # Perform Friedman test
     friedman_stat, friedman_p = perform_friedman_test(accuracy_matrix)
 
@@ -137,8 +151,4 @@ def main():
         create_heatmap(nemenyi_matrix, 'svm_results')
 
     # Write results to file
-    write_results('svm_results', friedman_stat, friedman_p, accuracy_matrix, nemenyi_matrix)
-
-
-if __name__ == "__main__":
-    main()
+    write_results(dataset_path, friedman_stat, friedman_p, accuracy_matrix, nemenyi_matrix)
