@@ -1,10 +1,11 @@
-\subsection{SVM Results} A total of 16 different configurations of the SVM algorithm were studied, combining the four kernels mentioned in Section \ref{methodology-svm-sec} (linear, RBF, polynomial, and sigmoid) with four different values for the parameter $C$. After training and testing each configuration on the datasets, an initial preselection of the best models based on accuracy was conducted. A Friedman test was then performed to determine whether there were statistically significant differences in accuracy between the models. For each dataset (hepatitis and mushroom), the model with the highest accuracy was selected.
+\subsection{SVM Results}
+A total of 16 different configurations of the SVM algorithm were studied, combining the four kernels mentioned in Section \ref{methodology-svm-sec} (linear, RBF, polynomial, and sigmoid) with four different values for the parameter $C$. After training and testing each configuration on the datasets, an initial preselection of the best models based on accuracy was conducted. A Friedman test was then performed to determine whether there were statistically significant differences in accuracy between the models. For each dataset (hepatitis and mushroom), the model with the highest accuracy was selected.
 
 \subsubsection{Hepatitis} For this dataset, the five models with the highest mean accuracies were selected from the initial 16. The mean accuracies and hyperparameters of these models are presented in Figure \ref{fig:hep-svm-1}. A more in-depth analysis of these five models can be found in Table \ref{tab:svm_metrics}.
 
-\begin{figure}[Ht]
+\begin{figure}[H]
     \centering
-    \includegraphics[width=0.5\textwidth]{figures/svm/hepatitis/statistical_analysis_results.png}
+    \includegraphics[width=0.45\textwidth]{figures/svm/hepatitis/statistical_analysis_results.png}
     \caption{Mean accuracy for the five models of SVM with higher mean accuracies.}
     \label{fig:hep-svm-1}
 \end{figure}
