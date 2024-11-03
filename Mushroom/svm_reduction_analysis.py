@@ -18,7 +18,7 @@ def load_and_prepare_data(filename):
     return df, accuracy_matrix
 
 
-def save_mean_metrics(df, filename):
+def save_mean_metrics(df, dataset_path):
     # Calculate mean metrics for each method
     mean_metrics = df.groupby('Method').agg({
         'Accuracy': ['mean', 'std'],
@@ -32,7 +32,8 @@ def save_mean_metrics(df, filename):
                             'Mean_Time', 'Std_Time']
 
     # Save to file
-    with open(f"plots_and_tables/svm_reduction/{filename}_mean_metrics.txt", 'w') as f:
+    file_path = os.path.join(dataset_path, "plots_and_tables/svm_reduction/svm_results_mean_metrics.txt")
+    with open(file_path, 'w') as f:
         f.write("Mean Metrics by Method\n")
         f.write("=====================\n\n")
         f.write(mean_metrics.to_string())
@@ -128,10 +129,10 @@ data_path = os.path.join(dataset_path, 'svm_mushroom_results_reduced.csv')
 df, accuracy_matrix = load_and_prepare_data(data_path)
 
 # Always save mean metrics regardless of other tests
-mean_metrics = save_mean_metrics(df, 'svm_results')
+mean_metrics = save_mean_metrics(df, dataset_path)
 
 # Create boxplot regardless of other tests
-create_boxplot(df, 'svm_results')
+create_boxplot(df, dataset_path)
 
 accuracy_values = df['Accuracy']
 
