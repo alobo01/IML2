@@ -34,15 +34,49 @@ pip list
 ```bash
 deactivate
 ```
+
 ## Execute scripts
-1.open virtual env
+
+1. Open virtual env
 ```bash
 source venv/bin/activate
 ```
-2. Running the script (Run it without arguments to display help menu)
- ```bash
- python3 main.py
- ```
+
+2. Running the script
+```bash
+python3 main.py --dataset <dataset_name> --study <study_type> [--recalculate]
+```
+
+Available options:
+- `dataset`: Choose between `Hepatitis` or `Mushroom`
+- `study`: Choose one of the following:
+  - `preprocess-dataset`: Calculate the preprocessing of the original folds
+  - `apply-reduction`: Calculate the reduced folds with the different reduction methods
+  - `knn-base`: KNN model and hyperparameter analysis 
+  - `svm-base`: SVM model and hyperparameter analysis
+  - `knn-vs-svm`: Compare KNN and SVM models
+  - `knn-reduction`: Compare reduction methods with KNN model
+  - `svm-reduction`: Compare reduction methods with SVM model
+- `recalculate`: Optional flag for recalculating training/testing results of KNN/SVM models.
+
+**Warning:** The preprocessed datasets, reduced folds and training/testing results are already included with the code, and their re-calculation will take a significant amount of time (up to several hours). Running `preprocess-dataset`, `apply-reduction` or include the `recalculate` flag is **not** necessary in order to run the analyses.
+
+Example commands:
+```bash
+# Preprocess Hepatitis dataset
+python3 main.py --dataset Hepatitis --study preprocess-dataset
+
+# Run KNN analysis on Mushroom dataset with recalculation
+python3 main.py --dataset Mushroom --study knn-base --recalculate
+
+# Compare KNN and SVM on Hepatitis dataset
+python3 main.py --dataset Hepatitis --study knn-vs-svm
+```
+
+To display help menu:
+```bash
+python3 main.py --help
+```
 
 3. Close virtual env
 ```bash
