@@ -1,10 +1,10 @@
-import os.path
-
+import os
 import pandas as pd
 from scipy import stats
 from scikit_posthocs import posthoc_nemenyi_friedman
 import matplotlib.pyplot as plt
 import seaborn as sns
+import numpy as np
 
 
 def load_and_prepare_data(filename):
@@ -16,6 +16,28 @@ def load_and_prepare_data(filename):
                                columns='Method',
                                values='Accuracy')
     return df, accuracy_matrix
+
+
+def save_mean_metrics(df, filename):
+    # Calculate mean metrics for each method
+    mean_metrics = df.groupby('Method').agg({
+        'Accuracy': ['mean', 'std'],
+        'F1': ['mean', 'std'],
+        'Time': ['mean', 'std']
+    }).round(4)
+
+    # Rename columns for better readability
+    mean_metrics.columns = ['Mean_Accuracy', 'Std_Accuracy',
+                            'Mean_F1', 'Std_F1',
+                            'Mean_Time', 'Std_Time']
+
+    # Save to file
+    with open(f"plots_and_tables/svm_reduction/{filename}_mean_metrics.txt", 'w') as f:
+        f.write("Mean Metrics by Method\n")
+        f.write("=====================\n\n")
+        f.write(mean_metrics.to_string())
+
+    return mean_metrics
 
 
 def perform_friedman_test(accuracy_matrix):
@@ -105,18 +127,27 @@ data_path = os.path.join(dataset_path, 'svm_mushroom_results_reduced.csv')
 # Load and prepare data
 df, accuracy_matrix = load_and_prepare_data(data_path)
 
-# Perform Friedman test
-friedman_stat, friedman_p = perform_friedman_test(accuracy_matrix)
+# Always save mean metrics regardless of other tests
+mean_metrics = save_mean_metrics(df, 'svm_results')
 
-# If Friedman test is significant, perform Nemenyi test
-nemenyi_matrix = None
-if friedman_p < 0.05:
-    nemenyi_matrix = perform_nemenyi_test(accuracy_matrix)
+# Create boxplot regardless of other tests
+create_boxplot(df, 'svm_results')
 
-# Create visualizations
-create_boxplot(df, dataset_path)
-if nemenyi_matrix is not None:
-    create_heatmap(nemenyi_matrix, dataset_path)
+accuracy_values = df['Accuracy']
 
-# Write results to file
-write_results(dataset_path, friedman_stat, friedman_p, accuracy_matrix, nemenyi_matrix)
+# Check if we should perform statistical tests
+if np.ptp(accuracy_values) < 0.1:  # np.ptp() gives the range (max - min) of values
+    print("Skipping Friedman test due to low accuracy variation.")
+
+else:
+    # Perform Friedman test
+    friedman_stat, friedman_p = perform_friedman_test(accuracy_matrix)
+
+    # If Friedman test is significant, perform Nemenyi test
+    nemenyi_matrix = None
+    if friedman_p < 0.05:
+        nemenyi_matrix = perform_nemenyi_test(accuracy_matrix)
+        create_heatmap(nemenyi_matrix, 'svm_results')
+
+    # Write results to file
+    write_results(dataset_path, friedman_stat, friedman_p, accuracy_matrix, nemenyi_matrix)
