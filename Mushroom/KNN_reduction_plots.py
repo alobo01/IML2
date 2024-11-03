@@ -37,33 +37,6 @@ def create_plots_folder(base_path: str):
     """Create folder for plots if it doesn't exist"""
     Path(base_path).mkdir(parents=True, exist_ok=True)
 
-
-def plot_reduction_accuracy_comparison(results: pd.DataFrame, plots_path: str):
-    """Plot comparison of reduction methods' accuracies"""
-    plt.figure(figsize=(10, 6))
-    sns.boxplot(x='reduction', y='Accuracy', data=results)
-    plt.title('Accuracy Distribution by Reduction Method\nMushroom Dataset')
-    plt.xlabel('Reduction Method')
-    plt.ylabel('Accuracy')
-    plt.xticks(rotation=45)
-    plt.tight_layout()
-    plt.savefig(os.path.join(plots_path, 'reduction_accuracy_comparison.png'), bbox_inches='tight', dpi=300)
-    plt.close()
-
-
-def plot_time_comparison(aggregated_results: pd.DataFrame, plots_path: str):
-    """Plot time comparison across reduction methods"""
-    plt.figure(figsize=(10, 6))
-    sns.barplot(x='reduction', y='mean_time', data=aggregated_results)
-    plt.title('Average Execution Time by Reduction Method\nMushroom Dataset')
-    plt.xlabel('Reduction Method')
-    plt.ylabel('Mean Execution Time (seconds)')
-    plt.xticks(rotation=45)
-    plt.tight_layout()
-    plt.savefig(os.path.join(plots_path, 'reduction_time_comparison.png'), bbox_inches='tight', dpi=300)
-    plt.close()
-
-
 def calculate_storage_percentages(sample_counts_df: pd.DataFrame):
     """
     Calculate the average percentage of storage reduction for each reduction method compared to the "None" reduction.
@@ -85,30 +58,43 @@ def calculate_storage_percentages(sample_counts_df: pd.DataFrame):
 
     return storage_percentages
 
-def plot_storage_comparison(sample_counts: pd.DataFrame, plots_path: str):
+
+def plot_accuracy_storage_comparison(results: pd.DataFrame, sample_counts: pd.DataFrame, plots_path: str):
+    """Plot comparison of reduction methods' accuracies and storage percentages"""
 
     storage_percentages = calculate_storage_percentages(sample_counts)
 
-    # Plot the storage percentages
-    plt.figure(figsize=(8, 6))
-    plt.bar(storage_percentages.keys(), storage_percentages.values())
-    plt.xlabel('Reduction Method')
-    plt.ylabel('Storage Percentage (%)')
-    plt.title('Storage Percentages per Reduction Method')
-    plt.grid()
-    plt.savefig(os.path.join(plots_path, 'storage_percentage_comparison.png'), bbox_inches='tight', dpi=300)
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 6))
+
+    # Accuracy Distribution Plot
+    sns.boxplot(x='reduction', y='Accuracy', data=results, ax=ax1)
+    ax1.set_title('Accuracy Distribution by Reduction Method')
+    ax1.set_xlabel('Reduction Method')
+    ax1.set_ylabel('Accuracy')
+    ax1.tick_params(axis='x', rotation=45)
+
+    # Storage Percentages Plot
+    ax2.bar(storage_percentages.keys(), storage_percentages.values())
+    ax2.set_xlabel('Reduction Method')
+    ax2.set_ylabel('Storage Percentage (%)')
+    ax2.set_title('Storage Percentages per Reduction Method')
+
+    plt.tight_layout()
+    plt.savefig(os.path.join(plots_path, 'accuracy_storage_comparison.png'), bbox_inches='tight', dpi=300)
     plt.close()
 
 
-def analyze_reduction_methods(aggregated_results: pd.DataFrame):
-    """Analyze and print statistics for each reduction method"""
-    print("\nReduction Methods Analysis:")
-
-    for _, row in aggregated_results.iterrows():
-        print(f"\nReduction Method: {row['reduction']}")
-        print(f"Mean Accuracy: {row['mean_accuracy']:.4f} (±{row['std_accuracy']:.4f})")
-        print(f"Mean F1 Score: {row['mean_f1']:.4f} (±{row['std_f1']:.4f})")
-        print(f"Mean Execution Time: {row['mean_time']:.4f} seconds")
+def plot_time_comparison(aggregated_results: pd.DataFrame, plots_path: str):
+    """Plot time comparison across reduction methods"""
+    plt.figure(figsize=(10, 6))
+    sns.barplot(x='reduction', y='mean_time', data=aggregated_results)
+    plt.title('Average Execution Time by Reduction Method')
+    plt.xlabel('Reduction Method')
+    plt.ylabel('Mean Execution Time (seconds)')
+    plt.xticks(rotation=45)
+    plt.tight_layout()
+    plt.savefig(os.path.join(plots_path, 'reduction_time_comparison.png'), bbox_inches='tight', dpi=300)
+    plt.close()
 
 
 def create_comparison_plots(results: pd.DataFrame, plots_path: str):
@@ -140,30 +126,6 @@ def create_comparison_plots(results: pd.DataFrame, plots_path: str):
     plt.grid(True)
     plt.savefig(os.path.join(plots_path, 'reduction_f1_accuracy_correlation.png'), bbox_inches='tight', dpi=300)
     plt.close()
-
-
-def statistical_comparison(results: pd.DataFrame):
-    """Perform statistical comparison between reduction methods"""
-    print("\nStatistical Comparison of Reduction Methods:")
-
-    # Overall rankings
-    print("\nOverall Rankings (averaged across all configurations):")
-    rankings = results.groupby('reduction').agg({
-        'Accuracy': ['mean', 'std'],
-        'Time': 'mean',
-        'F1': ['mean', 'std']
-    }).round(4)
-
-    print("\nBy Accuracy:")
-    accuracy_ranking = rankings['Accuracy']['mean'].sort_values(ascending=False)
-    for idx, (reduction, acc) in enumerate(accuracy_ranking.items(), 1):
-        std = rankings.loc[reduction, ('Accuracy', 'std')]
-        print(f"{idx}. {reduction}: {acc:.4f} (±{std:.4f})")
-
-    print("\nBy Execution Time:")
-    time_ranking = rankings['Time']['mean'].sort_values()
-    for idx, (reduction, time) in enumerate(time_ranking.items(), 1):
-        print(f"{idx}. {reduction}: {time:.4f} seconds")
 
 def plot_efficiency_comparison(results: pd.DataFrame, sample_counts: pd.DataFrame, plots_path: str):
     """
@@ -199,7 +161,7 @@ def plot_efficiency_comparison(results: pd.DataFrame, sample_counts: pd.DataFram
                  f'{height:.2e}',
                  ha='center', va='bottom')
 
-    plt.title('Accuracy per Training Sample by Reduction Method\nHepatitis Dataset')
+    plt.title('Accuracy per Training Sample by Reduction Method')
     plt.xlabel('Reduction Method')
     plt.ylabel('Efficiency (Accuracy % per Training Sample)')
     plt.xticks(rotation=45)
@@ -215,7 +177,7 @@ def main():
     # Paths
     csv_path = 'knn_reduction_results.csv'
     counts_path = 'knn_reduction_counts.csv'
-    plots_path = '..\\Mushroom\\plots_and_tables\\knn_reduction'
+    plots_path = 'plots_and_tables\\knn_reduction'
 
     # Create plots folder
     create_plots_folder(plots_path)
@@ -225,15 +187,10 @@ def main():
     sample_counts = pd.DataFrame(pd.read_csv(counts_path))
 
     # Generate plots
-    plot_reduction_accuracy_comparison(results, plots_path)
+    plot_accuracy_storage_comparison(results, sample_counts, plots_path)
     plot_time_comparison(aggregated_results, plots_path)
     create_comparison_plots(results, plots_path)
-    plot_storage_comparison(sample_counts, plots_path)
     plot_efficiency_comparison(results, sample_counts, plots_path)
-
-    # Print analyses
-    analyze_reduction_methods(aggregated_results)
-    statistical_comparison(results)
 
 
 if __name__ == "__main__":

@@ -1,10 +1,9 @@
 import pandas as pd
-import numpy as np
 from scipy import stats
 from scikit_posthocs import posthoc_nemenyi_friedman
 import matplotlib.pyplot as plt
 import seaborn as sns
-
+import numpy as np
 
 def analyze_model_performance(csv_path,output_path,report_output_path,alpha):
     """
@@ -21,39 +20,22 @@ def analyze_model_performance(csv_path,output_path,report_output_path,alpha):
 
     # Calculate average accuracy for each model
     avg_performance = df.groupby('Model')['Accuracy'].mean().sort_values(ascending=False)
-    top_models = avg_performance.head(8).index.tolist()
+    top_models = avg_performance.head(5).index.tolist()
 
     # Filter data for Top models
     top_df = df[df['Model'].isin(top_models)]
-
-    # Create a pivot table for the Friedman test
-    # Rows are datasets/folds, columns are models
-    pivot_df = top_df.pivot(
-        index='Dataset/Fold',
-        columns='Model',
-        values='Accuracy'
-    )
-
-    # Perform Friedman test
-    friedman_statistic, friedman_p_value = stats.friedmanchisquare(
-        *[pivot_df[model] for model in top_models]
-    )
 
     # Create summary DataFrame for Top models
     summary_stats = pd.DataFrame({
         'Mean Accuracy': top_df.groupby('Model')['Accuracy'].mean(),
         'Std Accuracy': top_df.groupby('Model')['Accuracy'].std(),
         'Mean F1': top_df.groupby('Model')['F1'].mean(),
-        'Mean Time': top_df.groupby('Model')['Time'].mean()
+        'Std F1': top_df.groupby('Model')['F1'].std(),
+        'Mean Time': top_df.groupby('Model')['Time'].mean(),
+        'Std Time': top_df.groupby('Model')['Time'].std()
     }).round(4)
 
     summary_stats = summary_stats.loc[top_models]  # Preserve order
-    # Print results
-    print("\nTop Models Summary Statistics:")
-    print(summary_stats)
-    print("\nFriedman Test Results:")
-    print(f"Statistic: {friedman_statistic:.4f}")
-    print(f"p-value: {friedman_p_value:.4f}")
 
     # generate a .txt report with the statistical analysis obtained
 
@@ -70,7 +52,29 @@ def analyze_model_performance(csv_path,output_path,report_output_path,alpha):
             f.write(f"Mean Accuracy: {summary_stats.loc[model, 'Mean Accuracy']:.4f}\n")
             f.write(f"Std Accuracy: {summary_stats.loc[model, 'Std Accuracy']:.4f}\n")
             f.write(f"Mean F1 Score: {summary_stats.loc[model, 'Mean F1']:.4f}\n")
+            f.write(f"Std F1 Score: {summary_stats.loc[model, 'Std F1']:.4f}\n")
             f.write(f"Mean Time: {summary_stats.loc[model, 'Mean Time']:.4f}\n")
+            f.write(f"Std Time: {summary_stats.loc[model, 'Std Time']:.4f}\n")
+
+    accuracy_values = df['Accuracy']
+
+    if np.ptp(accuracy_values) < 0.1:  # np.ptp() gives the range (max - min) of values
+        print("Skipping Friedman test due to low accuracy variation.")
+        return None  # or any other appropriate response for skipped test
+
+    # Create a pivot table for the Friedman test
+    # Rows are datasets/folds, columns are models
+    pivot_df = top_df.pivot(
+        index='Dataset/Fold',
+        columns='Model',
+        values='Accuracy'
+    )
+
+    # Perform Friedman test
+    friedman_statistic, friedman_p_value = stats.friedmanchisquare(
+        *[pivot_df[model] for model in top_models]
+    )
+    with open(report_output_path, 'a') as f:
 
         # Friedman Test Results
         f.write("\nFriedman Test Results\n")
@@ -103,7 +107,6 @@ def analyze_model_performance(csv_path,output_path,report_output_path,alpha):
         ax1.grid(True)
 
         plt.tight_layout()
-        plt.show()
         fig.savefig(output_path)
 
         print(f"p-value of {friedman_p_value} was obtained after performing the friedman_statistic test.")
@@ -155,15 +158,16 @@ def visualize_results(summary_stats, friedman_result, nemenyi_matrix):
     return fig
 
 
-def main(csv_path, output_path=None):
+def main(csv_path, output_path, report_output_path, alpha):
     """
     Main function to run the analysis and save results.
     """
     # Perform analysis
-    if not analyze_model_performance(csv_path):
+    if not analyze_model_performance(csv_path,output_path, report_output_path, alpha):
         print(' ')
     else:
-        summary_stats, friedman_result, nemenyi_matrix = analyze_model_performance(csv_path)
+        summary_stats, friedman_result, nemenyi_matrix = analyze_model_performance(csv_path,output_path,
+                                                                                   report_output_path, alpha)
 
         print("\nNemenyi Test Results (p-values):")
         print(nemenyi_matrix.round(4))
@@ -172,12 +176,4 @@ def main(csv_path, output_path=None):
         fig = visualize_results(summary_stats, friedman_result, nemenyi_matrix)
         if output_path:
             fig.savefig(output_path)
-        plt.show()
 
-
-# Example usage:
-#if __name__ == "__main__":
-#    # Replace with your CSV file path
-#    csv_path = "svm_base_results.csv"
-#    output_path = "plots_and_tables\\svm_base\\statistical_analysis_results.png"
-#    main(csv_path, output_path)

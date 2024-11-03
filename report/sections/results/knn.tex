@@ -1,4 +1,4 @@
-\subsection{KNN Results}
+\subsection{KNN Results}\label{sec:res:knn}
 We have evaluated the total 108 different KNN model configurations that can be achieved by assigning the different values available to each of the hyperparameters of the algorithm (k, distance metric, weighting method and voting policy).
 
 We have trained and tested each of the KNN configurations on the 10 folds of each of the 2 datasets, and stored their achieved accuracy, time and F1 scores in 2 separate CSV files (one per dataset). In the following Subsections, we will discuss some metrics extracted from these results, and we will perform multiple statistical analyses in order to determine whether there are significant differences between the models or not.
@@ -87,6 +87,6 @@ After applying the Bonferroni post-hoc test on the weighting methods, we get the
     \label{tab:knn:mush:posthoc}
 \end{table}
 
-With these results, we can state that \uline{there is very strong evidence supporting that there is indeed significant differences between the Equal Weights method and the other 2}; since even with a significance level of $ \alpha = 0.01 $ we would reject the null-hypothesis. Looking at the average difference in accuracy percentage, we can see that both weighting methods show poorer average performance than the Equal Weights, and therefore it is detrimental to use them over the ``standard'' weighting method.
+With these results, we can state that \uline{there is very strong evidence supporting that there is indeed significant differences between the Equal Weights method and the other 2}; since even with a significance level of $ \alpha = 0.01 $ (which is more stringent than the $ \alpha = 0.15 $ that we have for this test) we would reject the null-hypothesis. Looking at the average difference in accuracy percentage, we can see that both weighting methods show poorer average performance than the Equal Weights, and therefore it is detrimental to use them over the ``standard'' weighting method.
 
 Similarly as with Hepatitis dataset, we could not find significant differences between the top performing models upon the Mushroom dataset. Therfore, for future comparisons we could utilize any of the top 10 models (all of them have accuracy rate of 1), so we choose one that seems to have the simplest configuration of hyperparameters: a k value of 1, the Euclidean Distance, the Equal Weight method, and Majority Class voting.

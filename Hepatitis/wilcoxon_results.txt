@@ -1,0 +1,57 @@
+Wilcoxon Test Results to compare the best SVM algorithm and the best KNN algorithm for Hepatitis
+===================
+Analysis performed on: 2024-11-02 17:33:42
+SVM data file: svm_hepatitis_results_best1.csv
+KNN data file: top_knn_results.csv
+
+
+
+Analyzing Accuracy...
+
+Statistical results for Accuracy:
+----------------------------------------
+
+Mean Accuracy:
+SVM: 0.8507 +- 0.0936
+KNN: 0.8519 +- 0.0612
+
+Wilcoxon Signed-Rank Test Results for Accuracy:
+----------------------------------------
+Statistic: 5.0000
+P-value: 1.0000
+
+Interpretation:
+There is no significant difference between the models for Accuracy (p >= 0.1)
+
+============================================================
+
+
+Analyzing Time...
+
+Statistical results for Time:
+----------------------------------------
+
+Mean Time:
+SVM: 0.0008 +- 0.0006
+KNN: 0.0041 +- 0.0029
+Skipping Wilcoxon test due to low Time variation.
+
+Analyzing F1...
+
+Statistical results for F1:
+----------------------------------------
+
+Mean F1:
+SVM: 0.9083 +- 0.0566
+KNN: 0.8377 +- 0.0774
+
+Wilcoxon Signed-Rank Test Results for F1:
+----------------------------------------
+Statistic: 3.0000
+P-value: 0.0209
+
+Interpretation:
+There is a significant difference between the models (p < 0.1)
+SVM performed significantly better than KNN for F1
+
+============================================================

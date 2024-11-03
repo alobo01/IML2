@@ -20,7 +20,7 @@ class SVM():
         - degree: degree when the polynomial kernel is used
     """
 
-    def __init__(self, train_data: pd.DataFrame, train_labels: pd.Series, kernel: str = 'rbf', C: float = 1.0,
+    def __init__(self, train_data: pd.DataFrame, train_labels: pd.Series, kernel, C,
                  gamma: str = 'scale', degree: int = 2):
         self.train_data = train_data
         self.train_labels = train_labels
