@@ -1,0 +1,11 @@
+Model,Dataset/Fold,Accuracy,Time,F1
+"KNN, 7, manhattan_distance, equal_weight, majority_class",Hepatitis/0,0.8571428571428571,0.0040113925933837,0.8571428571428571
+"KNN, 7, manhattan_distance, equal_weight, majority_class",Hepatitis/1,0.8666666666666667,0.0062222480773925,0.8666666666666667
+"KNN, 7, manhattan_distance, equal_weight, majority_class",Hepatitis/2,0.7857142857142857,0.0062747001647949,0.6914285714285714
+"KNN, 7, manhattan_distance, equal_weight, majority_class",Hepatitis/3,0.7647058823529411,0.0045132637023925,0.7647058823529411
+"KNN, 7, manhattan_distance, equal_weight, majority_class",Hepatitis/4,1.0,0.0060198307037353,1.0
+"KNN, 7, manhattan_distance, equal_weight, majority_class",Hepatitis/5,0.8235294117647058,0.0,0.8089249492900609
+"KNN, 7, manhattan_distance, equal_weight, majority_class",Hepatitis/6,0.8666666666666667,0.0061473846435546,0.8666666666666667
+"KNN, 7, manhattan_distance, equal_weight, majority_class",Hepatitis/7,0.8666666666666667,0.0,0.8384615384615385
+"KNN, 7, manhattan_distance, equal_weight, majority_class",Hepatitis/8,0.875,0.0,0.8854166666666666
+"KNN, 7, manhattan_distance, equal_weight, majority_class",Hepatitis/9,0.8125,0.0080044269561767,0.7972222222222223

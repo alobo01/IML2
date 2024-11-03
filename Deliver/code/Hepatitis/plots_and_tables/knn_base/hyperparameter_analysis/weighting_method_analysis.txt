@@ -1,0 +1,30 @@
+Statistical Analysis Report - weighting_method
+==================================================
+
+Summary Statistics
+-----------------
+                           mean     std
+weighting_method                       
+equal_weight             0.8146  0.0808
+information_gain_weight  0.7804  0.0989
+reliefF_weight           0.8099  0.0815
+
+Friedman Test Results
+--------------------
+Test Statistic: 4.2222
+P-value: 0.1211
+Significance level (alpha): 0.2
+
+Significant differences were found between the configurations.
+
+Post-hoc Test Results (bonferroni)
+------------------------------
+Results compared to control (equal_weight):
+
+                         statistic  p_value  adjusted_p  effect_size  diff_percentage
+information_gain_weight        6.5   0.1069      0.2138      -0.0922          -7.7961
+reliefF_weight                 0.0   0.0679      0.1358       0.0000          -3.3461
+
+Additional Metrics Explanation:
+- effect_size: Median difference from the control configuration
+- diff_percentage: Percentage difference in mean accuracy from the control configuration
