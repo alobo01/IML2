@@ -7,17 +7,17 @@ Summary Statistics (Accuracy)
 reduction_method                                
 DROP3             0.9774  0.0060  0.9631  0.9828
 EENTH             0.9995  0.0009  0.9975  1.0000
-GCNN              0.4855  0.0112  0.4803  0.5172
+GCNN              0.9177  0.0072  0.9089  0.9322
 NONE              1.0000  0.0000  1.0000  1.0000
 
 Execution Time Statistics
 -----------------------
                     mean     std     min     max
 reduction_method                                
-DROP3             0.1242  0.0085  0.1138  0.1368
-EENTH             0.5400  0.0156  0.5216  0.5621
-GCNN              0.0939  0.0093  0.0812  0.1039
-NONE              0.7228  0.0163  0.6983  0.7393
+DROP3             0.2278  0.0103  0.2062  0.2382
+EENTH             0.9453  0.0215  0.9177  0.9904
+GCNN              0.1660  0.0144  0.1439  0.1820
+NONE              1.2359  0.0472  1.1870  1.3521
 
 Friedman Test Results
 --------------------
@@ -34,4 +34,4 @@ Results compared to control (NONE):
        statistic  p_value  adjusted_p  effect_size  diff_percentage
 DROP3        0.0   0.0020      0.0059      -0.0209          -2.2644
 EENTH        0.0   0.1088      0.3264       0.0000          -0.0493
-GCNN         0.0   0.0020      0.0059      -0.5179         -51.4531
+GCNN         0.0   0.0020      0.0059      -0.0825          -8.2349

@@ -6,6 +6,28 @@ Fu~Chang, Chin-Chin Lin, and Chi-Jen Lu.
   studies.
 \newblock {\em Journal of Machine Learning Research}, 7:2125--2148, 2006.
 
+\bibitem{quadratic}
+I.~Dagher.
+\newblock Quadratic kernel-free non-linear support vector machine.
+\newblock {\em Journal of Global Optimization}, 41:15--30, 2008.
+
+\bibitem{sk-svm}
+Scikit learn Developers.
+\newblock Support vector machines.
+\newblock \url{https://scikit-learn.org/stable/modules/svm.html}, 2024.
+\newblock Accessed: 2024-10-23.
+
+\bibitem{tanh}
+Hsuan-Tien Lin and Chih-Jen Lin.
+\newblock A study on sigmoid kernels for svm and the training of non-psd
+  kernels by smo-type methods.
+\newblock {\em Neural Computation}, 06 2003.
+
+\bibitem{rbf}
+I.~Roman, R.~Santana, A.~Mendiburu, et~al.
+\newblock In-depth analysis of svm kernel learning and its components.
+\newblock {\em Neural Computing and Applications}, 33:6575--6594, 2021.
+
 \bibitem{vazquez2005}
 Fernando Vázquez, Josep Sánchez, and Filiberto Pla.
 \newblock A stochastic approach to wilson's editing algorithm.

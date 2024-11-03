@@ -1,2 +1,35 @@
 \subsection{Support Vector Machine (SVM)}
-Describe the SVM approach.
+The Support Vector Machine (SVM) algorithm was primarily implemented using the existing `SVC` class from Scikit-Learn \cite{sk-svm}. A custom class, `SVM.py`, was created to organize all tools, metrics, and analyses used in this project in a structured way. \newline
+
+Support Vector Machines (SVM) are designed to identify the optimal hyperplane that separates data into distinct classes. SVM can use various kernels for this separation, as it can be linear, polynomial, Gaussian (rbf) or sigmoid. Changing the kernels improve the adaptation of the model different dataset complexities and distributions. Each kernel is specifically tailored to capture unique data patterns, helping to achieve optimal separation across a wide range of data types.
+\newline
+All the four kernels mentioned were implemented in this project, and a brief overview of each is provided below, with the parameters selected for each kernel.
+
+\begin{itemize}
+    \item The \textbf{linear} kernel is one of the simplest and most widely used kernel functions, particularly effective for data that is linearly separable data that can be divided by a straight line in two dimensions or a hyperplane in higher dimensions. Its main advantage is computational efficiency. No additional parameters were needed for this kernel.
+\item The \textbf{polynomial} kernel was studied with a degree of 2, as higher values tend to lead to overfitting. A quadratic kernel can represent various forms of geometric boundaries, such as hyperplanes, hyperspheres, hyperellipsoids, hyperparaboloids, and hyperboloids, enabling the learning of a wide range of non-linear models \cite{quadratic}.
+\item The \textbf{gaussian} or \textbf{rbf} kernel is known to capture the smoothness property of the data \cite{rbf}. The kernel function is defined as 
+$$
+K(\mathbf{x}, \mathbf{x'}) = \exp ( - \gamma \|\mathbf{x} - \mathbf{x'}\|^2 ).
+$$
+
+\item The \textbf{sigmoid} kernel is particularly effective for complex classification tasks where data point relationships resemble those captured by neural networks. However, selecting optimal parameters for this kernel can be challenging \cite{tanh}. The kernel function is definded as
+
+$$
+K(\mathbf{x}, \mathbf{x'}) = \tanh  ( \gamma \langle \mathbf{x} , \mathbf{x'} \rangle ).
+$$
+
+
+
+\end{itemize}
+
+The gamma parameter of the kernel function for the rbf kernel and the sigmoid kernel was set as \texttt{gamma='scale'}, so it is automatically set based on the number of features in the dataset. Specifically, it calculates $\gamma$ as follows:
+
+$$
+\gamma = \frac{1}{n_{\text{features}} \cdot \text{X.var()}}
+$$
+
+where $n_{\text{features}}$ is the number of features in the training data and $\text{X.var()}$ is the variance of the training data.
+\newline 
+
+The optimization problem in soft margin SVMs is formulated with a regularization parameter C, which adjusts tolerance for misclassifications (higher C enforces fewer errors).

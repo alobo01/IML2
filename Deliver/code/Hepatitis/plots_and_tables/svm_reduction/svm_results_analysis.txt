@@ -1,0 +1,33 @@
+Statistical Analysis of SVM Results
+==================================
+
+Summary Statistics:
+-----------------
+Method   DROP3   EENTH    GCNN    NONE
+mean    0.7864  0.8522  0.6165  0.8507
+std     0.1119  0.0948  0.1769  0.0987
+min     0.6429  0.7059  0.3125  0.6667
+max     1.0000  1.0000  0.8667  1.0000
+
+Friedman Test Results:
+---------------------
+Statistic: 12.8966
+P-value: 0.0049
+
+Nemenyi Test Results:
+--------------------
+P-values matrix:
+        DROP3   EENTH    GCNN    NONE
+DROP3  1.0000  0.3069  0.7263  0.3069
+EENTH  0.3069  1.0000  0.0286  1.0000
+GCNN   0.7263  0.0286  1.0000  0.0286
+NONE   0.3069  1.0000  0.0286  1.0000
+
+Interpretation:
+--------------
+The Friedman test shows significant differences between methods (p < 0.05).
+The Nemenyi test was performed to identify specific differences between methods.
+
+Significant differences found between:
+- EENTH vs GCNN
+- GCNN vs NONE

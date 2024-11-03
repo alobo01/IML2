@@ -1,8 +1,8 @@
 Wilcoxon Test Results to compare the best SVM algorithm and the best KNN algorithm for Hepatitis
 ===================
-Analysis performed on: 2024-11-03 12:04:36
-SVM data file: svm_hepatitis_results_best1.csv
-KNN data file: top_knn_results.csv
+Analysis performed on: 2024-11-03 14:13:29
+SVM data file: Hepatitis\svm_hepatitis_results_best1.csv
+KNN data file: Hepatitis\top_knn_results.csv
 
 
 
