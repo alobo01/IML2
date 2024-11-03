@@ -1,8 +1,5 @@
 \subsection{SVM Results}
 A total number of 16 different configurations of the SVM algorithm were studied, combining the values of the four kernels mentioned in the methodology section \ref{methodology-svm-sec} (linear, rbf, polynomial and sigmoid) with four different values for the $C$ value. After training and testing all these configurations of the SVM algorithm in each dataset, a previous preselection of the best models based on the accuracy were done. A Friedman test was done in order to see if there was statistical significant difference between the accuracy of the models and the one with the highest accuracy was selected for each dataset (hepatitis and mushroom). 
-\newline
-
-The best model for each dataset was trained and tested with the reduced dataset obtained after applying the methods discribed in the section \ref{reduced-methods-sec}. Consecutively, another statistical analysis was carry on in order to show which reduced method offered a better performance. A more in deep analysis of these five models can be seen in Tabla \ref{tab:svm_metrics}.
 
 \subsubsection{Hepatitis}
 Firstly, for this dataset, the five models with higher mean accuracies were selected from the 16 initial ones. The mean accuracies and the hyperparameters of those models can be consulted in Figure \ref{fig:hep-svm-1}.
