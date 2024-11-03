@@ -1,8 +1,6 @@
-\subsection{SVM Results}
-A total number of 16 different configurations of the SVM algorithm were studied, combining the values of the four kernels mentioned in the methodology section \ref{methodology-svm-sec} (linear, rbf, polynomial and sigmoid) with four different values for the $C$ value. After training and testing all these configurations of the SVM algorithm in each dataset, a previous preselection of the best models based on the accuracy were done. A Friedman test was done in order to see if there was statistical significant difference between the accuracy of the models and the one with the highest accuracy was selected for each dataset (hepatitis and mushroom). 
+\subsection{SVM Results} A total of 16 different configurations of the SVM algorithm were studied, combining the four kernels mentioned in Section \ref{methodology-svm-sec} (linear, RBF, polynomial, and sigmoid) with four different values for the parameter $C$. After training and testing each configuration on the datasets, an initial preselection of the best models based on accuracy was conducted. A Friedman test was then performed to determine whether there were statistically significant differences in accuracy between the models. For each dataset (hepatitis and mushroom), the model with the highest accuracy was selected.
 
-\subsubsection{Hepatitis}
-Firstly, for this dataset, the five models with higher mean accuracies were selected from the 16 initial ones. The mean accuracies and the hyperparameters of those models can be consulted in Figure \ref{fig:hep-svm-1}. A more in deep analysis of these five models can be seen in Tabla \ref{tab:svm_metrics}.
+\subsubsection{Hepatitis} For this dataset, the five models with the highest mean accuracies were selected from the initial 16. The mean accuracies and hyperparameters of these models are presented in Figure \ref{fig:hep-svm-1}. A more in-depth analysis of these five models can be found in Table \ref{tab:svm_metrics}.
 
 \begin{figure}[t]
     \centering
@@ -33,6 +31,6 @@ SVM, kernel=rbf, C=10.0      & 0.82 $\pm$ 0.09 & 0.89 $\pm$ 0.06 & 0.0011 $\pm$ 
 \label{tab:svm_metrics}
 \end{table}
 
-The Friedman test was performed obtaining a $p-value=0.4292$ that lead us to accept the null hypothesis that there are no significant differences between the five studied models. The model with hyperparameters kernel=sigmoid and C=100.0, as it can be seen in Table \ref{tab:svm_metrics}, showed higher mean accuracy, higher mean f1 score and lower mean time in this case, thus this one will be consider for the further analysis of the reduced datasets.
+The Friedman test was performed, yielding a $p$-value of 0.4292, leading us to accept the null hypothesis that there are no significant differences between the five models studied. The model with hyperparameters kernel=sigmoid and C=100.0, as shown in Table \ref{tab:svm_metrics}, exhibited higher mean accuracy, a higher mean F1 score, and lower mean computation time. Therefore, this model will be considered for further analysis on the reduced datasets.
 
 \subsubsection{Mushroom}
