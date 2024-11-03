@@ -30,14 +30,14 @@ plt.ylabel("Feature 2")
 plt.savefig(os.path.join(output_dir, "original_blobs.png"))
 plt.close()
 
-ogknn = KNNAlgorithm()
+ogknn = KNNAlgorithm(k=5)
 ogknn.fit(features,labels)
-knn = KNNAlgorithm()
+knn = KNNAlgorithm(k=5)
 knn.fit(features,labels)
 reduction = ReductionKNN(ogknn,knn)
 
 # Values of mu to evaluate
-mu_values = [0.2, 0.4, 0.6, 0.8]
+mu_values = [0.15, 0.25, 0.45, 0.65, 0.85]
 
 # Generate and save filtered plots for each mu
 for mu in mu_values:
