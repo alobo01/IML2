@@ -8,6 +8,7 @@ import importlib.util
 def check_dependencies():
     """Check if all required packages are installed."""
     required_packages = [
+        'sklearn',
         'pydantic',
         'pandas',
         'numpy',
@@ -96,10 +97,38 @@ def run_knn_reduction(dataset_path, recalculate):
 
 def run_svm_reduction(dataset_path, recalculate):
     """Run SVM reduction study."""
-
     print("\nPerforming SVM reduction analysis...")
     analysis_script = "svm_reduction_analysis.py"
     import_script(dataset_path / analysis_script)
+
+
+def run_preprocessing(dataset_path):
+    """Run dataset preprocessing."""
+    print("\nRunning dataset preprocessing...")
+    preprocessing_script = dataset_path / "preprocessing.py"
+    if not preprocessing_script.exists():
+        print(f"Error: Preprocessing script not found at {preprocessing_script}")
+        sys.exit(1)
+    import_script(preprocessing_script)
+
+
+def run_reduction(dataset_path):
+    """Run dataset reduction."""
+    print("\nRunning dataset reduction...")
+    reduction_script = dataset_path / "reduction.py"
+    if not reduction_script.exists():
+        print(f"Error: Reduction script not found at {reduction_script}")
+        sys.exit(1)
+    import_script(reduction_script)
+
+
+def confirm_long_computation():
+    """Ask for user confirmation before long computation."""
+    print("\nWarning: This computation may take a significant amount of time.")
+    response = input("Do you want to continue? (y/n): ")
+    if response.lower() != 'y':
+        print("Operation cancelled.")
+        sys.exit(0)
 
 
 def main():
@@ -114,8 +143,9 @@ def main():
 
     # Study type selection
     parser.add_argument('--study', type=str, required=True,
-                        choices=['knn-base', 'svm-base', 'knn-vs-svm',
-                                 'knn-reduction', 'svm-reduction'],
+                        choices=['preprocess-dataset', 'apply-reduction',
+                                 'knn-base', 'svm-base', 'knn-vs-svm',
+                                'knn-reduction', 'svm-reduction'],
                         help='Type of study to perform')
 
     # Recalculation flag
@@ -128,13 +158,9 @@ def main():
     dataset_path = Path(args.dataset)
     validate_dataset_folder(dataset_path)
 
-    # Warning about recalculation
-    if args.recalculate:
-        print("\nWarning: Recalculation of results may take significant time.")
-        response = input("Do you want to continue? (y/n): ")
-        if response.lower() != 'y':
-            print("Operation cancelled.")
-            sys.exit(0)
+    # Warning about recalculation or long computation
+    if args.recalculate or args.study in ['preprocess-dataset', 'apply-reduction']:
+        confirm_long_computation()
 
     # Run appropriate study
     try:
@@ -148,6 +174,10 @@ def main():
             run_knn_reduction(dataset_path, args.recalculate)
         elif args.study == 'svm-reduction':
             run_svm_reduction(dataset_path, args.recalculate)
+        elif args.study == 'preprocess-dataset':
+            run_preprocessing(dataset_path)
+        elif args.study == 'apply-reduction':
+            run_reduction(dataset_path)
 
         print("\nStudy completed successfully!")
 

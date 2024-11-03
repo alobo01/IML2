@@ -15,18 +15,19 @@ from classes.KNN import KNNAlgorithm
 
 # Function to load data from ARFF files for a fold
 def load_fold_data(fold_number, dataset_path):
-    train_file = os.path.join(dataset_path, f'hepatitis.fold.{fold_number:06d}.train.arff')
-    test_file = os.path.join(dataset_path, f'hepatitis.fold.{fold_number:06d}.test.arff')
+    preprocessed_data_path = os.path.join(dataset_path, "preprocessed_csvs")
 
-    loaded_preprocessor = DataPreprocessor().load(f'preprocessor_instances/hepatitis.fold.{fold_number:06d}.preprocessor.joblib')
-    train_data_preprocessed = loaded_preprocessor.transform(DataPreprocessor.load_arff(train_file))
-    test_data_preprocessed = loaded_preprocessor.transform(DataPreprocessor.load_arff(test_file))
+    train_file = os.path.join(preprocessed_data_path, f'mushroom.fold.{fold_number:06d}.train.csv')
+    test_file = os.path.join(preprocessed_data_path, f'mushroom.fold.{fold_number:06d}.test.csv')
+
+    train_data_preprocessed = pd.read_csv(train_file)
+    test_data_preprocessed = pd.read_csv(test_file)
 
     # Separate features and labels for train and test data
-    train_features = train_data_preprocessed.drop('Class', axis=1)
-    train_labels = train_data_preprocessed['Class']
-    test_features = test_data_preprocessed.drop('Class', axis=1)
-    test_labels = test_data_preprocessed['Class']
+    train_features = train_data_preprocessed.drop('class', axis=1)
+    train_labels = train_data_preprocessed['class']
+    test_features = test_data_preprocessed.drop('class', axis=1)
+    test_labels = test_data_preprocessed['class']
 
     return train_features, train_labels, test_features, test_labels
 
@@ -53,9 +54,9 @@ def process_fold(fold_number, dataset_path, method):
     train_features, train_labels, test_features, test_labels = load_fold_data(fold_number, dataset_path)
 
     # Initialize original KNN
-    ogKNN = KNNAlgorithm(k=7, distance_metric='manhattan_distance')
+    ogKNN = KNNAlgorithm(k=1)
     ogKNN.fit(train_features, train_labels)
-    reducedKNN = KNNAlgorithm(k=7, distance_metric='manhattan_distance')
+    reducedKNN = KNNAlgorithm(k=1)
 
     if method == 'None':
         model = ogKNN
@@ -68,9 +69,10 @@ def process_fold(fold_number, dataset_path, method):
         reduction_knn = ReductionKNN(ogKNN, reducedKNN)
         reduced_data = reduction_knn.apply_reduction(pd.concat([train_features, train_labels], axis=1), method)
         reduction_time = time.time() - start
-        reduced_data.to_csv(f"ReducedFolds/hepatitis.fold.{fold_number:06d}.train.{method}.csv")
-        train_features_reduced = reduced_data.drop('Class', axis=1)
-        train_labels_reduced = reduced_data['Class']
+        reduced_data_path = os.path.join(dataset_path, f"ReducedFolds/mushroom.fold.{fold_number:06d}.train.{method}.csv")
+        reduced_data.to_csv(reduced_data_path)
+        train_features_reduced = reduced_data.drop('class', axis=1)
+        train_labels_reduced = reduced_data['class']
         reduction_percentage = 100 * (len(train_labels_reduced) / len(train_labels))
     
     
@@ -88,7 +90,7 @@ def process_fold(fold_number, dataset_path, method):
 # Main function to process all folds
 def main(dataset_path):
     # Reduction methods to compare
-    reduction_methods = [ 'DROP3','EENTH', 'None', 'GCNN']
+    reduction_methods = [ 'DROP3', 'None', 'GCNN', 'EENTH']
     n_folds = 10
 
     # Initialize result storage
@@ -100,7 +102,7 @@ def main(dataset_path):
         print(f"Evaluating method: {method}")
 
         # Parallel execution using ThreadPoolExecutor for each fold
-        with ThreadPoolExecutor(max_workers=4) as executor:
+        with ThreadPoolExecutor(max_workers=1) as executor:
             futures = [
                 executor.submit(process_fold, fold_number, dataset_path, method)
                 for fold_number in range(n_folds)
@@ -117,14 +119,17 @@ def main(dataset_path):
 
 
 
-    filename = 'knn_reduction_comparison_results'
+    pickle_path = os.path.join(dataset_path, "knn_reduction_comparison_results.pkl")
     # Save results to a pickle file
-    with open(f"{filename}.pkl", 'wb') as f:
+    with open(pickle_path, 'wb') as f:
         pickle.dump(results, f)
 
-    print(f"Results saved to {filename}.pkl")
+    print(f"Results saved to {pickle_path}")
 
 
 if __name__ == "__main__":
-    dataset_path = '..\\datasets\\hepatitis'
-    main(dataset_path)
+    dataset_path = '..\\Mushroom'
+else:
+    dataset_path = 'Mushroom'
+
+main(dataset_path)
