@@ -1,2 +1,24 @@
 \subsection{SVM Reduction Results}
-The best model for each dataset was trained and tested with the reduced dataset obtained after applying the methods discribed in the section \ref{reduced-methods-sec}. Consecutively, another statistical analysis was carry on in order to show which reduced method offered a better performance.
+The best model for each dataset was trained and tested on the reduced dataset obtained after applying the methods described in Section \ref{reduced-methods-sec}. Subsequently, an additional statistical analysis was carried out to determine which reduction method provided better performance.
+
+\subsubsection{Hepatitis}
+The SVM model with hyperparameters `kernel=sigmoid` and `C=100.0` was trained and tested on the reduced data samples obtained for each reduction method (DROP3, EENTH, and GCNN). The mean values of the evaluated statistical metrics are presented in Table \ref{tab:reduction_help}. Again, the Friedman test was conducted, yielding a $p$-value of 0.0057 for accuracy and 0.0210 for the F1-score. Due to these low values, the null hypothesis was rejected, and a post-hoc test was implemented. The Nemenyi test was chosen to determine
+
+\begin{table}[h!]
+\centering
+\begin{tabular}{|l|c|c|c|}
+\hline
+\textbf{Reduction Method} & \textbf{Accuracy} & \textbf{F1 Score} & \textbf{Time (s)} \\
+\hline
+DROP3 & 0.7864 $\pm$ 0.1119 & 0.8614 $\pm$ 0.0741 & 0.0009 $\pm$ 0.0006 \\
+\hline
+EENTH & 0.8522 $\pm$ 0.0948 & 0.9081 $\pm$ 0.0606 & 0.0011 $\pm$ 0.0007 \\
+\hline
+GCNN  & 0.6443 $\pm$ 0.1271 & 0.7310 $\pm$ 0.1178 & 0.0014 $\pm$ 0.0007 \\
+\hline
+NONE  & 0.8507 $\pm$ 0.0987 & 0.9083 $\pm$ 0.0597 & 0.0011 $\pm$ 0.0004 \\
+\hline
+\end{tabular}
+\caption{Performance metrics for different reduction methods for the SVM algorithm with kernel=sigmoid and C=100.}
+\label{tab:reduction_hep}
+\end{table}
