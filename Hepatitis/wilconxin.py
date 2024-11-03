@@ -67,10 +67,17 @@ def perform_wilcoxon_test(svm_values, knn_values, metric_name, logger):
     logger.write("\nInterpretation:")
     if p_value < alpha:
         logger.write(f"There is a significant difference between the models (p < {alpha})")
-        if svm_mean > knn_mean:
-            logger.write(f"SVM performed significantly better than KNN for {metric_name}")
+        if metric_name=='Time':
+            if svm_mean < knn_mean:
+                logger.write(f"SVM performed significantly better than KNN for {metric_name}")
+            else:
+                logger.write(f"KNN performed significantly better than SVM for {metric_name}")
+
         else:
-            logger.write(f"KNN performed significantly better than SVM for {metric_name}")
+            if svm_mean > knn_mean:
+                logger.write(f"SVM performed significantly better than KNN for {metric_name}")
+            else:
+                logger.write(f"KNN performed significantly better than SVM for {metric_name}")
     else:
         logger.write(f"There is no significant difference between the models for {metric_name} (p >= {alpha})")
     logger.write("\n" + "=" * 60 + "\n")
