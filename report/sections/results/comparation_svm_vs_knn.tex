@@ -2,4 +2,45 @@
 Finally, to better understand the performance of the two algorithms studied (KNN and SVM), they were compared for each of the two datasets. Specifically, the hyperparameters that yielded the best model, according with what was discussed in the previous subsections, were selected.
 \subsubsection{Hepatitis}
 
+The two compared models were SVM with hyperparameters: kernel='sigmoid' and C=100 with KNN with hyperparameters: k=7, manhattan distance, equal weight and majority class. The mean metrics valued can be consulted in Table \ref{tab:svm-knn-hep} \newline
+
+\begin{table}[h!]
+\centering
+\begin{tabular}{lccc}
+\hline
+\textbf{Model} & \textbf{Accuracy} & \textbf{Time (s)} & \textbf{F1 Score} \\
+\hline
+SVM & 0.85 $\pm$ 0.10 & 0.0010 $\pm$ 0.0000 & 0.91 $\pm$ 0.06 \\
+\hline
+KNN & 0.85 $\pm$ 0.06 & 0.004 $\pm$ 0.001 & 0.84 $\pm$ 0.08 \\
+\hline
+\end{tabular}
+\caption{Performance metrics for SVM and KNN models.}
+\label{tabsvm-knn-hep}
+\end{table}
+
+A deeper analysis was carried out to determine if there were significant differences between each of the metrics; for this, the Wilcoxon Signed-Rank Test was performed on each metric. \newline
+
+For the accuracy metric, a $p$-value of 1 was obtained, indicating no significant difference between the two algorithms. Regarding time performance, although the mean time for SVM was considerably lower than for KNN, the test could not be performed due to insufficient variance in the time metric values for each algorithm. Finally, when analyzing the F1 score, the Wilcoxon test showed a $p$-value of 0.0209, leading to the conclusion that SVM performed significantly better than KNN.
 \subsubsection{Mushroom}
+
+The two compared models were SVM with hyperparameters: kernel='linear' and C=1 with KNN with hyperparameters: k=1, euclidian distance, equal weight and majority class. The mean metrics valued can be consulted in Table \ref{tab:svm-knn-mushroom}. \newline
+
+\begin{table}[h!]
+\centering
+\begin{tabular}{lccc}
+\hline
+\textbf{Model} & \textbf{Accuracy} & \textbf{Time (s)} & \textbf{F1 Score} \\
+\hline
+SVM & 1.0000 $\pm$ 0.0000 & 0.004 $\pm$ 0.002 & 1.0000 $\pm$ 0.0000 \\
+\hline
+KNN & 1.0000 $\pm$ 0.0000 & 2.0 $\pm$ 0.8 & 1.0000 $\pm$ 0.0000 \\
+\hline
+\end{tabular}
+\caption{Performance metrics for the best SVM and KNN models on the Mushroom dataset.}
+\label{tab:svm-knn-mushroom}
+\end{table}
+
+As with the previous dataset, a deeper analysis was carried out to determine if there were significant differences between each of the metrics using the Wilcoxon Signed-Rank Test on each metric.
+
+For the accuracy and F1 score metrics, the test was not performed due to lack of variance. However, time performance showed a significant difference between the two methods, as anticipated from the mean values shown in Table \ref{tab:svm-knn-mushroom}. The $p$-value obtained was 0.002, leading to the conclusion that SVM performed significantly better than KNN.
