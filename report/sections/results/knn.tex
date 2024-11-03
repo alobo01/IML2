@@ -5,17 +5,19 @@ We have trained and tested each of the KNN configurations on the 10 folds of eac
 
 \subsubsection{Hepatitis}
 First of all, we summarize the obtained results in a pairplot matrix (Figure \ref{fig:hep:pairplot}). Each row and column of the matrix represents a hyperparameter, and the diagonal displays the accuracy histograms for each of the values of the corresponding hyperparameter. Meanwhile, the lower and upper triangles of the matrix display, respectively, the average accuracy and time heatmaps over the folds for each pairwise configurations of the 2 corresponding hyperparameters. With this kind of pairplot we get useful insight into the relationships betweem hyperparameters. We can see a clear trend towards better performance as the value of k goes up; however, this is a preliminary visualization and we cannot extract any real definitive conclusions.
-\begin{figure}[t]
+
+Next, we filter out the top 10 performing models (based on average accuracy over the folds) and we perform a statistical analysis on them to try to find significant differences. After filtering the top 10 models, we apply a Friedman test on their accuracies over the 10 folds, with the null-hypothesis being that there is no significant difference between the models. From the Friedman test we obtain a p-value of \textbf{0.9997}, which overwhelmingly supports the null-hypothesis and indicates that \uline{there are not any statistically significant differences between the top 10 models}.
+
+\begin{figure}[H]
     \centering
     \includegraphics[width=\textwidth]{figures/knn/hepatitis/hyperparameter_pairplot_matrix.png}
     \caption{Hepatitis pairplot matrix summary}
     \label{fig:hep:pairplot}
 \end{figure}
-
-Next, we filter out the top 10 performing models (based on average accuracy over the folds) and we perform a statistical analysis on them to try to find significant differences. After filtering the top 10 models, we apply a Friedman test on their accuracies over the 10 folds, with the null-hypothesis being that there is no significant difference between the models. From the Friedman test we obtain a p-value of \textbf{0.9997}, which overwhelmingly supports the null-hypothesis and indicates that \uline{there are not any statistically significant differences between the top 10 models}.
+\FloatBarrier
 
 Since we could not find a model that stands out over the rest with the standard statistical analysis over individual models, we now aim to at least find some indication as to which hyperparameter values are more prominent in succesful models. In order to do this, we performed 4 separate statistical tests by grouping the models according to their configuration of each of the hyperparameters. In other words, we applied a Friedman test to each of the hyperparameters to try to find significant differences between each of their possible values. The obtained p-values for each of the 4 Friedman tests can be seen in Table \ref{tab:knn:hep:hyperparam}.
-\begin{table}[h]
+\begin{table}[H]
     \centering
     \small
     \begin{tabular}{|c|c|c|c|}
@@ -49,14 +51,16 @@ Before going to the next section, it is important to note that, since we did not
 
 \subsubsection{Mushroom}
 For the Mushroom dataset we will follow essentially the same steps as we did for the Hepatitis dataset, starting with visualizing the results in a pairplot matrix (Figure \ref{fig:mush:pairplot}). Interestingly, in this case we observe the opposite trend on the values of k as we did for the Hepatitis dataset, which indicates better perfomance of lower values of k this time. We can also see a tendency towards slightly better accuracy when using the Clark distance; however, we also observe extreme values of the computation time for said distance metric.
-\begin{figure}[t]
+
+As we did before, we proceed with a Friedman test to try to find significant differences among the top performing models. This time we get a p-value of \textbf{nan}, which indicates that there is absolutely no difference in the ranks between the top 10 models. When observing the results, we find that all of the 10 models have an average accuracy of 1.0, which means that they all perfectly classify all of the test samples across the 10 folds of the Mushroom dataset. The only conclusion that we can take from this result is that \uline{the Mushroom dataset is not complex enough to show any difference in performance between these model configurations}.
+
+\begin{figure}[H]
     \centering
     \includegraphics[width=\textwidth]{figures/knn/mushroom/hyperparameter_pairplot_matrix.png}
     \caption{Mushroom pairplot matrix summary}
     \label{fig:mush:pairplot}
 \end{figure}
-
-As we did before, we proceed with a Friedman test to try to find significant differences among the top performing models. This time we get a p-value of \textbf{nan}, which indicates that there is absolutely no difference in the ranks between the top 10 models. When observing the results, we find that all of the 10 models have an average accuracy of 1.0, which means that they all perfectly classify all of the test samples across the 10 folds of the Mushroom dataset. The only conclusion that we can take from this result is that \uline{the Mushroom dataset is not complex enough to show any difference in performance between these model configurations}.
+\FloatBarrier
 
 Next, we perform a statistical test on the hyperparameters in order to find significant differences between their possible values. The results can be found in Table \ref{tab:knn:mush:hyperparam}.
 \begin{table}[h]

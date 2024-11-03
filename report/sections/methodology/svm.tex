@@ -1,4 +1,4 @@
-\subsection{Support Vector Machine (SVM)}
+\subsection{Support Vector Machine (SVM)}\label{methodology-svm-sec}
 The Support Vector Machine (SVM) algorithm was primarily implemented using the existing `SVC` class from Scikit-Learn \cite{sk-svm}. A custom class, `SVM.py`, was created to organize all tools, metrics, and analyses used in this project in a structured way. \newline
 
 Support Vector Machines (SVM) are designed to identify the optimal hyperplane that separates data into distinct classes. SVM can use various kernels for this separation, as it can be linear, polynomial, Gaussian (rbf) or sigmoid. Changing the kernels improve the adaptation of the model different dataset complexities and distributions. Each kernel is specifically tailored to capture unique data patterns, helping to achieve optimal separation across a wide range of data types.
@@ -32,4 +32,4 @@ $$
 where $n_{\text{features}}$ is the number of features in the training data and $\text{X.var()}$ is the variance of the training data.
 \newline 
 
-The optimization problem in soft margin SVMs is formulated with a regularization parameter C, which adjusts tolerance for misclassifications (higher C enforces fewer errors).
+The optimization problem in soft margin SVMs is formulated with a regularization parameter C, which adjusts tolerance for misclassifications (higher C enforces fewer errors). Several different values for this parameter were studied in order to obtain a better performance of the algorithm.

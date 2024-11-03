@@ -23,6 +23,12 @@ Hsuan-Tien Lin and Chih-Jen Lin.
   kernels by smo-type methods.
 \newblock {\em Neural Computation}, 06 2003.
 
+\bibitem{Micci-Barreca}
+Daniele Micci-Barreca.
+\newblock A preprocessing scheme for high-cardinality categorical attributes in
+  classification and prediction problems.
+\newblock {\em SIGKDD Explor. Newsl.}, 3(1):27–32, July 2001.
+
 \bibitem{rbf}
 I.~Roman, R.~Santana, A.~Mendiburu, et~al.
 \newblock In-depth analysis of svm kernel learning and its components.
