@@ -112,7 +112,7 @@ def previous_analysis(dataset_path_f):
                     'Time': evaluation[1],
                     'F1': evaluation[2]
                 })
-                #print(f'Model {model}, for mushroom/{n} trained and saved.')
+                # print(f'Model {model}, for mushroom/{n} trained and saved.')
             results[i + 1, j + 1] = np.mean(prev_accuracy)
 
     print('Previous analysis done in order to find the best parameters for the dataset.')
@@ -208,7 +208,7 @@ def total_analysis(kernel_def_f, c_value_def_f, dataset_path_ff):
     reduction_methods_f = ['EENTH', 'GCNN', 'DROP3']
     metrics = []
 
-    #print(f"Testing configurations across 10 folds with different reduction methods.")
+    # print(f"Testing configurations across 10 folds with different reduction methods.")
     for reduction_method in reduction_methods_f:
         reduction_desc = reduction_method if reduction_method else "None"
 
@@ -227,7 +227,7 @@ def total_analysis(kernel_def_f, c_value_def_f, dataset_path_ff):
                 'Time': evaluation[1],
                 'F1': evaluation[2]
             })
-            #print(f'Model {model}, for mushroom/{fold} and {reduction_desc} trained and saved.')
+            # print(f'Model {model}, for mushroom/{fold} and {reduction_desc} trained and saved.')
 
     return pd.DataFrame(metrics)
 

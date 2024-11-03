@@ -2,15 +2,15 @@ import os
 from typing import Tuple, Optional
 import numpy as np
 import pandas as pd
-from Mushroom.svm_base_analysis import analyze_model_performance, main
 from classes.SVM import SVM
+from Hepatitis.svm_base_analysis import analyze_model_performance, main
 
 """
-This script performs a comprehensive analysis of SVM models on the Mushroom dataset using different 
+This script performs a comprehensive analysis of SVM models on the Hepatitis dataset using different 
 kernels, C values, and data reduction methods. The analysis follows these main steps:
 
 1. Evaluates 16 different SVM configurations (4 kernels × 4 C values) across 10 folds
-2. Identifies the top 10 performing configurations based on accuracy
+2. Identifies the top 5 performing configurations based on accuracy
 3. Applies Friedman-Nemenyi statistical test to determine significant differences between models
 4. Selects the best performing model and evaluates it with different data reduction techniques
 
@@ -41,27 +41,26 @@ def load_fold_data(fold_number: int, dataset_path: str, reduction_method: Option
     if reduction_method:
         # Load reduced training data from the ReducedFolds directory
         train_path = os.path.join(dataset_path, 'ReducedFolds')
-        train_file = os.path.join(train_path, f'mushroom.fold.{fold_number:06d}.train.{reduction_method}.csv')
+        train_file = os.path.join(train_path, f'hepatitis.fold.{fold_number:06d}.train.{reduction_method}.csv')
     else:
         # Load original training data from preprocessed_csvs directory
         train_path = os.path.join(dataset_path, 'preprocessed_csvs')
-        train_file = os.path.join(train_path, f'mushroom.fold.{fold_number:06d}.train.csv')
+        train_file = os.path.join(train_path, f'hepatitis.fold.{fold_number:06d}.train.csv')
 
     # Load and clean training data
     train_data = pd.read_csv(train_file)
     train_data = train_data.drop('Unnamed: 0', axis=1)
-    if reduction_method: train_data = train_data.drop('Unnamed: 0.1', axis=1)
 
     # Load and clean test data (always from original dataset)
-    test_file = os.path.join(dataset_path, 'preprocessed_csvs', f'mushroom.fold.{fold_number:06d}.test.csv')
+    test_file = os.path.join(dataset_path, 'preprocessed_csvs', f'hepatitis.fold.{fold_number:06d}.test.csv')
     test_data = pd.read_csv(test_file)
     test_data = test_data.drop('Unnamed: 0', axis=1)
 
     # Split features and labels
-    train_features = train_data.drop('class', axis=1)
-    train_labels = train_data['class']
-    test_features = test_data.drop('class', axis=1)
-    test_labels = test_data['class']
+    train_features = train_data.drop('Class', axis=1)
+    train_labels = train_data['Class']
+    test_features = test_data.drop('Class', axis=1)
+    test_labels = test_data['Class']
 
     return train_features, train_labels, test_features, test_labels
 
@@ -107,37 +106,37 @@ def previous_analysis(dataset_path_f):
                 model = f"SVM, kernel={kernels[i]}, C={c_values[j]:.1f}"
                 metrics.append({
                     'Model': model,
-                    'Dataset/Fold': f"Mushroom/{n}",
+                    'Dataset/Fold': f"Hepatitis/{n}",
                     'Accuracy': evaluation[0],
                     'Time': evaluation[1],
                     'F1': evaluation[2]
                 })
-                #print(f'Model {model}, for mushroom/{n} trained and saved.')
+                #print(f'Model {model}, for hepatitis/{n} trained and saved.')
             results[i + 1, j + 1] = np.mean(prev_accuracy)
 
     print('Previous analysis done in order to find the best parameters for the dataset.')
     return results, pd.DataFrame(metrics)
 
 
-def find_top_ten(results_f):
+def find_top_five(results_f):
     """
-    Identifies the top 10 performing SVM configurations based on average accuracy.
+    Identifies the top 5 performing SVM configurations based on average accuracy.
 
     Args:
-        results_f: 10x10 array containing average accuracies for each configuration
+        results_f: 5x5 array containing average accuracies for each configuration
 
     Returns:
         Tuple containing:
-        - kernel_tags: Array of the top 10 kernel types
+        - kernel_tags: Array of the top 5 kernel types
         - c_value_tags: Array of the corresponding C values
     """
-    kernel_tags = np.zeros(10, dtype='object')
-    c_value_tags = np.zeros(10, dtype='float')
+    kernel_tags = np.zeros(5, dtype='object')
+    c_value_tags = np.zeros(5, dtype='float')
     data_region = results_f[1:, 1:].copy()
 
     print(f'Optimal parameters are: ')
 
-    for n in range(10):
+    for n in range(5):
         max_index = np.argmax(data_region)
         max_coords = np.unravel_index(max_index, data_region.shape)
         kernel_tags[n] = results_f[max_coords[0] + 1, 0]
@@ -150,18 +149,18 @@ def find_top_ten(results_f):
 
 def filter_top_models(prev_results_dataframe, kernel_def_fff, c_value_def_fff):
     """
-    Extracts performance metrics for the top 10 SVM configurations.
+    Extracts performance metrics for the top 5 SVM configurations.
 
     Args:
         prev_results_dataframe: DataFrame containing all performance metrics
-        kernel_def_fff: Array of top 10 kernel types
-        c_value_def_fff: Array of top 10 C values
+        kernel_def_fff: Array of top 5 kernel types
+        c_value_def_fff: Array of top 5 C values
 
     Returns:
-        DataFrame containing metrics only for the top 10 configurations
+        DataFrame containing metrics only for the top 5 configurations
     """
     filtered_rows = []
-    for i in range(10):
+    for i in range(5):
         model_pattern = f"SVM, kernel={kernel_def_fff[i]}, C={c_value_def_fff[i]:.1f}"
         matching_rows = prev_results_dataframe[prev_results_dataframe['Model'] == model_pattern]
         filtered_rows.append(matching_rows)
@@ -222,34 +221,33 @@ def total_analysis(kernel_def_f, c_value_def_f, dataset_path_ff):
 
             metrics.append({
                 'Model': model + ', ' + reduction_desc,
-                'Dataset/Fold': f"Mushroom/{fold}",
+                'Dataset/Fold': f"Hepatitis/{fold}",
                 'Accuracy': evaluation[0],
                 'Time': evaluation[1],
                 'F1': evaluation[2]
             })
-            #print(f'Model {model}, for mushroom/{fold} and {reduction_desc} trained and saved.')
+            #print(f'Model {model}, for hepatitis/{fold} and {reduction_desc} trained and saved.')
 
     return pd.DataFrame(metrics)
 
+
 if __name__ == "__main__":
-    dataset_path = '..\\Mushroom'
+    dataset_path = '..\\Hepatitis'
 else:
-    dataset_path = 'Mushroom'
-# Main execution flow
+    dataset_path = 'Hepatitis'
 
 # 1. Initial analysis of all SVM configurations
 prev_results = previous_analysis(dataset_path)
 txt_path = os.path.join(dataset_path, "pre_analysis.txt")
 np.savetxt(txt_path, prev_results[0], fmt="%s", delimiter=" , ")
 
-# 2. Extract top 10 performing configurations
-kernel_def, c_value_def = find_top_ten(prev_results[0])
-best_ten_algo = filter_top_models(prev_results[1], kernel_def, c_value_def)
-csv_path = os.path.join(dataset_path, "svm_mushroom_results_best10.csv")
-best_ten_algo.to_csv(csv_path, index=False)
+# 2. Extract top 5 performing configurations
+kernel_def, c_value_def = find_top_five(prev_results[0])
+best_five_algo = filter_top_models(prev_results[1], kernel_def, c_value_def)
+csv_path = os.path.join(dataset_path, "svm_hepatitis_results_best5.csv")
+best_five_algo.to_csv(csv_path, index=False)
 
 # 3. Statistical analysis using Friedman-Nemenyi test
-csv_path = os.path.join(dataset_path, "svm_mushroom_results_best10.csv")
 output_path = os.path.join(dataset_path, "plots_and_tables\\svm_base\\statistical_analysis_results.png")
 report_output_path = os.path.join(dataset_path, "plots_and_tables\\svm_base\\statistical_analysis_results.txt")
 alpha = 0.1  # Significance level for statistical tests
@@ -258,22 +256,21 @@ if not analyze_model_performance(csv_path, output_path, report_output_path, alph
     print("It is concluded that there is no statistical difference between models.")
 else:
     print("It is concluded that there is statistical difference between models.")
-    main(csv_path,output_path,report_output_path,alpha)
+    main(csv_path, output_path, report_output_path, alpha)
 
 # 4. Select and analyze best performing configuration
 best_SVM_algo = filter_top_model(prev_results[1], kernel_def[0], c_value_def[0])
-csv_path_2 = os.path.join(dataset_path, "svm_mushroom_results_best1.csv")
+csv_path_2 = os.path.join(dataset_path, "svm_hepatitis_results_best1.csv")
 best_SVM_algo.to_csv(csv_path_2, index=False)
 
 # Add "NONE" label to indicate no reduction method used
 df = best_SVM_algo.copy()
 df['Model'] = df['Model'] + ", NONE"
-print(c_value_def[0])
 
 # 5. Evaluate best configuration with different reduction methods
-best_algo_reduced = total_analysis(kernel_def[0], float(c_value_def[0]), dataset_path)
+best_algo_reduced = total_analysis(kernel_def[0], c_value_def[0], dataset_path)
 best_algo_reduced_and_non_red = pd.concat([df, best_algo_reduced], ignore_index=True)
-csv_path_3 = os.path.join(dataset_path, "svm_mushroom_results_reduced.csv")
+csv_path_3 = os.path.join(dataset_path, "svm_hepatitis_results_reduced.csv")
 best_algo_reduced_and_non_red.to_csv(csv_path_3, index=False)
 
 # Note: Further analysis of reduction methods can be performed by running svm_reduction_analysis.py

@@ -4,7 +4,6 @@ from scipy import stats
 from scikit_posthocs import posthoc_nemenyi_friedman
 import matplotlib.pyplot as plt
 import seaborn as sns
-from pathlib import Path
 from typing import Tuple, Dict, List
 
 
@@ -211,10 +210,6 @@ class KNNHyperparameterAnalyzer:
                 f.write(f"No significant differences were found between the configurations ")
                 f.write(f"at the {self.alpha} significance level.\n")
                 f.write("Post-hoc test was not performed.\n")
-
-def create_plots_folder(base_path: str):
-    """Create folder for plots if it doesn't exist"""
-    Path(base_path).mkdir(parents=True, exist_ok=True)
 
 
 # Rest of the script remains the same (main function and other methods)

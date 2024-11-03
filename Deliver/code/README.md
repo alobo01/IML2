@@ -59,7 +59,7 @@ Available options:
   - `svm-reduction`: Compare reduction methods with SVM model
 - `recalculate`: Optional flag for recalculating training/testing results of KNN/SVM models.
 
-**Warning:**  Running `preprocess-dataset`, `apply-reduction` or including the `recalculate` flag is **not** necessary in order to run the analyses. The preprocessed datasets, reduced folds and training/testing results are already included with the code, and their re-calculation will take a significant amount of time (up to several hours).
+**Warning:** The preprocessed datasets, reduced folds and training/testing results are already included with the code, and their re-calculation will take a significant amount of time (up to several hours). Running `preprocess-dataset`, `apply-reduction` or include the `recalculate` flag is **not** necessary in order to run the analyses.
 
 Example commands:
 ```bash

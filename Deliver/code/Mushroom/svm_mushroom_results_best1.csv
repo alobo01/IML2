@@ -1,0 +1,11 @@
+Model,Dataset/Fold,Accuracy,Time,F1
+"SVM, kernel=linear, C=1.0",Mushroom/0,1.0,0.0,1.0
+"SVM, kernel=linear, C=1.0",Mushroom/1,1.0,0.0,1.0
+"SVM, kernel=linear, C=1.0",Mushroom/2,1.0,0.0,1.0
+"SVM, kernel=linear, C=1.0",Mushroom/3,1.0,0.0,1.0
+"SVM, kernel=linear, C=1.0",Mushroom/4,1.0,0.0,1.0
+"SVM, kernel=linear, C=1.0",Mushroom/5,1.0,0.0,1.0
+"SVM, kernel=linear, C=1.0",Mushroom/6,1.0,0.0,1.0
+"SVM, kernel=linear, C=1.0",Mushroom/7,1.0,0.0025849342346191406,1.0
+"SVM, kernel=linear, C=1.0",Mushroom/8,1.0,0.0,1.0
+"SVM, kernel=linear, C=1.0",Mushroom/9,1.0,0.0,1.0

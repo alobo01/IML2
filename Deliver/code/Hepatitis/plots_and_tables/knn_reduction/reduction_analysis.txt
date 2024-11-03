@@ -1,0 +1,37 @@
+Statistical Analysis Report - Reduction Methods
+==================================================
+
+Summary Statistics (Accuracy)
+--------------------------
+                    mean     std     min     max
+reduction_method                                
+DROP3             0.7597  0.1758  0.4286  1.0000
+EENTH             0.8573  0.0601  0.7647  0.9375
+GCNN              0.7604  0.0643  0.6000  0.8125
+NONE              0.8386  0.0677  0.7500  1.0000
+
+Execution Time Statistics
+-----------------------
+                    mean     std    min     max
+reduction_method                               
+DROP3             0.0042  0.0012  0.003  0.0071
+EENTH             0.0044  0.0011  0.003  0.0070
+GCNN              0.0036  0.0005  0.003  0.0042
+NONE              0.0045  0.0020  0.003  0.0100
+
+Friedman Test Results
+--------------------
+Test Statistic: 11.5125
+P-value: 0.0093
+Significance level (alpha): 0.1
+
+Significant differences were found between the reduction methods.
+
+Post-hoc Test Results (Bonferroni)
+--------------------------------
+Results compared to control (NONE):
+
+       statistic  p_value  adjusted_p  effect_size  diff_percentage
+DROP3        2.0   0.1380      0.4140       0.0000          -9.4072
+EENTH       12.0   0.3997      1.0000       0.0294           2.2288
+GCNN         0.0   0.0176      0.0527      -0.0627          -9.3174
