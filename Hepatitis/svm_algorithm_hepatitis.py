@@ -231,41 +231,43 @@ def total_analysis(kernel_def_f, c_value_def_f, dataset_path_ff):
     return pd.DataFrame(metrics)
 
 
-# Main execution flow
+def main():
+    # 1. Initial analysis of all SVM configurations
+    dataset_path = '..\\Hepatitis'
+    prev_results = previous_analysis(dataset_path)
+    np.savetxt("pre_analysis.txt", prev_results[0], fmt="%s", delimiter=" , ")
 
-# 1. Initial analysis of all SVM configurations
-dataset_path = '..\\Hepatitis'
-prev_results = previous_analysis(dataset_path)
-np.savetxt("pre_analysis.txt", prev_results[0], fmt="%s", delimiter=" , ")
+    # 2. Extract top 5 performing configurations
+    kernel_def, c_value_def = find_top_five(prev_results[0])
+    best_five_algo = filter_top_models(prev_results[1], kernel_def, c_value_def)
+    best_five_algo.to_csv('svm_hepatitis_results_best5.csv', index=False)
 
-# 2. Extract top 5 performing configurations
-kernel_def, c_value_def = find_top_five(prev_results[0])
-best_five_algo = filter_top_models(prev_results[1], kernel_def, c_value_def)
-best_five_algo.to_csv('svm_hepatitis_results_best5.csv', index=False)
+    # 3. Statistical analysis using Friedman-Nemenyi test
+    csv_path = "svm_hepatitis_results_best5.csv"
+    output_path = "plots_and_tables\\svm_base\\statistical_analysis_results.png"
+    report_output_path = "plots_and_tables\\svm_base\\statistical_analysis_results.txt"
+    alpha = 0.1  # Significance level for statistical tests
 
-# 3. Statistical analysis using Friedman-Nemenyi test
-csv_path = "svm_hepatitis_results_best5.csv"
-output_path = "plots_and_tables\\svm_base\\statistical_analysis_results.png"
-report_output_path = "plots_and_tables\\svm_base\\statistical_analysis_results.txt"
-alpha = 0.1  # Significance level for statistical tests
+    if not svm_base_analysis.analyze_model_performance(csv_path, output_path, report_output_path, alpha):
+        print("It is concluded that there is no statistical difference between models.")
+    else:
+        print("It is concluded that there is statistical difference between models.")
+        svm_base_analysis.main(csv_path, output_path, report_output_path, alpha)
 
-if not svm_base_analysis.analyze_model_performance(csv_path, output_path, report_output_path, alpha):
-    print("It is concluded that there is no statistical difference between models.")
-else:
-    print("It is concluded that there is statistical difference between models.")
-    svm_base_analysis.main(csv_path, output_path, report_output_path, alpha)
+    # 4. Select and analyze best performing configuration
+    best_SVM_algo = filter_top_model(prev_results[1], kernel_def[0], c_value_def[0])
+    best_SVM_algo.to_csv('svm_hepatitis_results_best1.csv', index=False)
 
-# 4. Select and analyze best performing configuration
-best_SVM_algo = filter_top_model(prev_results[1], kernel_def[0], c_value_def[0])
-best_SVM_algo.to_csv('svm_hepatitis_results_best1.csv', index=False)
+    # Add "NONE" label to indicate no reduction method used
+    df = best_SVM_algo.copy()
+    df['Model'] = df['Model'] + ", NONE"
 
-# Add "NONE" label to indicate no reduction method used
-df = best_SVM_algo.copy()
-df['Model'] = df['Model'] + ", NONE"
+    # 5. Evaluate best configuration with different reduction methods
+    best_algo_reduced = total_analysis(kernel_def[0], c_value_def[0], dataset_path)
+    best_algo_reduced_and_non_red = pd.concat([df, best_algo_reduced], ignore_index=True)
+    best_algo_reduced_and_non_red.to_csv('svm_hepatitis_results_reduced.csv', index=False)
 
-# 5. Evaluate best configuration with different reduction methods
-best_algo_reduced = total_analysis(kernel_def[0], c_value_def[0], dataset_path)
-best_algo_reduced_and_non_red = pd.concat([df, best_algo_reduced], ignore_index=True)
-best_algo_reduced_and_non_red.to_csv('svm_hepatitis_results_reduced.csv', index=False)
+    # Note: Further analysis of reduction methods can be performed by running svm_reduction_analysis_bis.py
 
-# Note: Further analysis of reduction methods can be performed by running svm_reduction_analysis_bis.py
+if __name__ == "__main__":
+    main()

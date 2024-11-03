@@ -9,77 +9,77 @@ Mean Accuracy: 1.0000
 Std Accuracy: 0.0000
 Mean F1 Score: 1.0000
 Std F1 Score: 0.0000
-Mean Time: 0.0044
-Std Time: 0.0025
+Mean Time: 0.0052
+Std Time: 0.0023
 
 Model: SVM, kernel=linear, C=10.0
 Mean Accuracy: 1.0000
 Std Accuracy: 0.0000
 Mean F1 Score: 1.0000
 Std F1 Score: 0.0000
-Mean Time: 0.0026
-Std Time: 0.0003
+Mean Time: 0.0050
+Std Time: 0.0016
 
 Model: SVM, kernel=rbf, C=100.0
 Mean Accuracy: 1.0000
 Std Accuracy: 0.0000
 Mean F1 Score: 1.0000
 Std F1 Score: 0.0000
-Mean Time: 0.0062
-Std Time: 0.0005
+Mean Time: 0.0111
+Std Time: 0.0025
 
 Model: SVM, kernel=linear, C=100.0
 Mean Accuracy: 1.0000
 Std Accuracy: 0.0000
 Mean F1 Score: 1.0000
 Std F1 Score: 0.0000
-Mean Time: 0.0034
-Std Time: 0.0018
+Mean Time: 0.0051
+Std Time: 0.0027
 
 Model: SVM, kernel=poly, C=10.0
 Mean Accuracy: 1.0000
 Std Accuracy: 0.0000
 Mean F1 Score: 1.0000
 Std F1 Score: 0.0000
-Mean Time: 0.0033
-Std Time: 0.0020
+Mean Time: 0.0032
+Std Time: 0.0010
 
 Model: SVM, kernel=poly, C=100.0
 Mean Accuracy: 1.0000
 Std Accuracy: 0.0000
 Mean F1 Score: 1.0000
 Std F1 Score: 0.0000
-Mean Time: 0.0017
-Std Time: 0.0006
+Mean Time: 0.0033
+Std Time: 0.0011
 
 Model: SVM, kernel=rbf, C=10.0
 Mean Accuracy: 1.0000
 Std Accuracy: 0.0000
 Mean F1 Score: 1.0000
 Std F1 Score: 0.0000
-Mean Time: 0.0065
-Std Time: 0.0011
+Mean Time: 0.0116
+Std Time: 0.0027
 
 Model: SVM, kernel=rbf, C=1.0
 Mean Accuracy: 0.9994
 Std Accuracy: 0.0010
 Mean F1 Score: 0.9994
 Std F1 Score: 0.0011
-Mean Time: 0.0195
-Std Time: 0.0021
+Mean Time: 0.0256
+Std Time: 0.0012
 
 Model: SVM, kernel=poly, C=1.0
 Mean Accuracy: 0.9978
 Std Accuracy: 0.0015
 Mean F1 Score: 0.9977
 Std F1 Score: 0.0016
-Mean Time: 0.0050
-Std Time: 0.0005
+Mean Time: 0.0068
+Std Time: 0.0013
 
 Model: SVM, kernel=linear, C=0.1
 Mean Accuracy: 0.9920
 Std Accuracy: 0.0037
 Mean F1 Score: 0.9916
 Std F1 Score: 0.0039
-Mean Time: 0.0047
-Std Time: 0.0007
+Mean Time: 0.0088
+Std Time: 0.0031
