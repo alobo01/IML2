@@ -245,4 +245,10 @@ def main(csv_path: str, output_dir: str = None, alpha: float = 0.1):
 if __name__ == "__main__":
     csv_path = "knn_reduction_results.csv"
     output_dir = "plots_and_tables\\knn_reduction"
-    results = main(csv_path, output_dir)
+else:
+    csv_path = "Hepatitis\\knn_reduction_results.csv"
+    output_dir = "Hepatitis\\plots_and_tables\\knn_reduction"
+
+results = main(csv_path, output_dir)
+
+print(f"Results successfully saved in folder Mushroom/plots_and_tables/knn_reduction\n")

@@ -262,7 +262,11 @@ def main(csv_path: str, output_dir: str = None, alpha: float = 0.05):
 
 
 if __name__ == "__main__":
-    # Replace with your CSV file path
     csv_path = "knn_base_results.csv"
     output_dir = "plots_and_tables\\knn_base\\hyperparameter_analysis"
-    results = main(csv_path, output_dir, alpha=0.2)
+else:
+    csv_path = "Hepatitis\\knn_base_results.csv"
+    output_dir = "Hepatitis\\plots_and_tables\\knn_base\\hyperparameter_analysis"
+
+results = main(csv_path, output_dir, alpha=0.2)
+print(f"Results and plots saved in folder Hepatitis/plots_and_tables/knn_base/hyperparameter_analysis\n")

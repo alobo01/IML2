@@ -133,5 +133,7 @@ def run_knn_experiments(dataset_path: str):
 
 if __name__ == "__main__":
     dataset_path = '..\\Mushroom'
-    results = run_knn_experiments(dataset_path)
-    results.to_csv('knn_base_results.csv', index=False)
+else:
+    dataset_path = 'Mushroom'
+results = run_knn_experiments(dataset_path)
+results.to_csv('knn_base_results.csv', index=False)

@@ -173,25 +173,26 @@ def plot_efficiency_comparison(results: pd.DataFrame, sample_counts: pd.DataFram
     plt.close()
 
 
-def main():
-    # Paths
-    csv_path = 'knn_reduction_results.csv'
-    counts_path = 'knn_reduction_counts.csv'
-    plots_path = 'plots_and_tables\\knn_reduction'
-
-    # Create plots folder
-    create_plots_folder(plots_path)
-
-    # Load and prepare data
-    results, aggregated_results = load_and_prepare_data(csv_path)
-    sample_counts = pd.DataFrame(pd.read_csv(counts_path))
-
-    # Generate plots
-    plot_accuracy_storage_comparison(results, sample_counts, plots_path)
-    plot_time_comparison(aggregated_results, plots_path)
-    create_comparison_plots(results, plots_path)
-    plot_efficiency_comparison(results, sample_counts, plots_path)
-
-
 if __name__ == "__main__":
-    main()
+    dataset_path = '..\\Hepatitis'
+else:
+    dataset_path = 'Hepatitis'
+# Paths
+csv_path = os.path.join(dataset_path,'knn_reduction_results.csv')
+counts_path = os.path.join(dataset_path,'knn_reduction_counts.csv')
+plots_path = os.path.join(dataset_path,'plots_and_tables\\knn_reduction')
+
+# Create plots folder
+create_plots_folder(plots_path)
+
+# Load and prepare data
+results, aggregated_results = load_and_prepare_data(csv_path)
+sample_counts = pd.DataFrame(pd.read_csv(counts_path))
+
+# Generate plots
+plot_accuracy_storage_comparison(results, sample_counts, plots_path)
+plot_time_comparison(aggregated_results, plots_path)
+create_comparison_plots(results, plots_path)
+plot_efficiency_comparison(results, sample_counts, plots_path)
+
+print(f"Plots successfully saved in folder Hepatitis/plots_and_tables/knn_reduction\n")

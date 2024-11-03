@@ -165,7 +165,6 @@ def main(csv_path, plot_output_path=None, report_output_path=None, alpha=0.05):
     fig = visualize_results(summary_stats, friedman_result, nemenyi_matrix, significant_differences)
     if plot_output_path:
         fig.savefig(plot_output_path)
-    plt.show()
 
     # Generate and save text report
     if report_output_path:
@@ -181,5 +180,11 @@ if __name__ == "__main__":
     csv_path = "knn_base_results.csv"
     plot_output_path = "plots_and_tables\\knn_base\\statistical_analysis_results.png"
     report_output_path = "plots_and_tables\\knn_base\\statistical_analysis_report.txt"
-    alpha = 0.2  # Set significance level
-    main(csv_path, plot_output_path, report_output_path, alpha)
+else:
+    csv_path = 'Mushroom\\knn_base_results.csv'
+    plot_output_path = "Mushroom\\plots_and_tables\\knn_base\\statistical_analysis_results.png"
+    report_output_path = "Mushroom\\plots_and_tables\\knn_base\\statistical_analysis_report.txt"
+
+alpha = 0.2  # Set significance level
+main(csv_path, plot_output_path, report_output_path, alpha)
+print(f"Results saved in file Mushroom/plots_and_tables/knn_base/statistical_analysis_report.txt\n")

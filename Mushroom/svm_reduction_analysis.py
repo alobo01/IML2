@@ -1,8 +1,11 @@
+import os.path
+
 import pandas as pd
 from scipy import stats
 from scikit_posthocs import posthoc_nemenyi_friedman
 import matplotlib.pyplot as plt
 import seaborn as sns
+
 
 def load_and_prepare_data(filename):
     df = pd.read_csv(filename)
@@ -24,25 +27,28 @@ def perform_nemenyi_test(accuracy_matrix):
     return posthoc_nemenyi_friedman(accuracy_matrix)
 
 
-def create_boxplot(df, filename):
+def create_boxplot(df, dataset_path):
     plt.figure(figsize=(10, 6))
     sns.boxplot(x='Method', y='Accuracy', data=df)
     plt.xticks(rotation=45)
     plt.tight_layout()
-    plt.savefig(f"plots_and_tables/svm_reduction/{filename}_boxplot.png")
+    plot_path = os.path.join(dataset_path, "plots_and_tables/svm_reduction/svm_results_boxplot.png")
+    plt.savefig(plot_path)
     plt.close()
 
 
-def create_heatmap(nemenyi_matrix, filename):
+def create_heatmap(nemenyi_matrix, dataset_path):
     plt.figure(figsize=(10, 8))
     sns.heatmap(nemenyi_matrix, annot=True, cmap='RdYlBu', center=0.5)
     plt.tight_layout()
-    plt.savefig(f"plots_and_tables/svm_reduction/{filename}_heatmap.png")
+    plot_path = os.path.join(dataset_path, "plots_and_tables/svm_reduction/svm_results_heatmap.png")
+    plt.savefig(plot_path)
     plt.close()
 
 
-def write_results(filename, friedman_stat, friedman_p, accuracy_matrix, nemenyi_matrix=None):
-    with open(f"plots_and_tables/svm_reduction/{filename}_analysis.txt", 'w') as f:
+def write_results(dataset_path, friedman_stat, friedman_p, accuracy_matrix, nemenyi_matrix=None):
+    file_path = os.path.join(dataset_path, "plots_and_tables/svm_reduction/svm_results_analysis.txt")
+    with open(file_path, 'w') as f:
         f.write("Statistical Analysis of SVM Results\n")
         f.write("==================================\n\n")
 
@@ -85,27 +91,32 @@ def write_results(filename, friedman_stat, friedman_p, accuracy_matrix, nemenyi_
         else:
             f.write("The Friedman test shows no significant differences between methods (p >= 0.05).\n")
 
-
-def main():
-    # Load and prepare data
-    df, accuracy_matrix = load_and_prepare_data('svm_mushroom_results_reduced.csv')
-
-    # Perform Friedman test
-    friedman_stat, friedman_p = perform_friedman_test(accuracy_matrix)
-
-    # If Friedman test is significant, perform Nemenyi test
-    nemenyi_matrix = None
-    if friedman_p < 0.05:
-        nemenyi_matrix = perform_nemenyi_test(accuracy_matrix)
-
-    # Create visualizations
-    create_boxplot(df, 'svm_results')
-    if nemenyi_matrix is not None:
-        create_heatmap(nemenyi_matrix, 'svm_results')
-
-    # Write results to file
-    write_results('svm_results', friedman_stat, friedman_p, accuracy_matrix, nemenyi_matrix)
+    with open(file_path, 'r') as file:
+        logs = file.read()
+        print(logs)
 
 
 if __name__ == "__main__":
-    main()
+    dataset_path = '..\\Mushroom'
+else:
+    dataset_path = 'Mushroom'
+
+data_path = os.path.join(dataset_path, 'svm_mushroom_results_reduced.csv')
+# Load and prepare data
+df, accuracy_matrix = load_and_prepare_data(data_path)
+
+# Perform Friedman test
+friedman_stat, friedman_p = perform_friedman_test(accuracy_matrix)
+
+# If Friedman test is significant, perform Nemenyi test
+nemenyi_matrix = None
+if friedman_p < 0.05:
+    nemenyi_matrix = perform_nemenyi_test(accuracy_matrix)
+
+# Create visualizations
+create_boxplot(df, dataset_path)
+if nemenyi_matrix is not None:
+    create_heatmap(nemenyi_matrix, dataset_path)
+
+# Write results to file
+write_results(dataset_path, friedman_stat, friedman_p, accuracy_matrix, nemenyi_matrix)

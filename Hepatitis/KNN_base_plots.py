@@ -278,27 +278,25 @@ def create_pairplot(data: pd.DataFrame, plots_path: str):
     plt.close()
 
 
-def main():
+if __name__ == "__main__":
     # Paths
     csv_path = 'knn_base_results.csv'
-    plots_path = '..\\Hepatitis\\plots_and_tables\\knn_base'
-
-    # Create plots folder
-    create_plots_folder(plots_path)
-
-    # Load and prepare data
-    results, aggregated_results = load_and_prepare_data(csv_path)
-
-    # Generate plots
-    plot_k_vs_accuracy(aggregated_results, plots_path)
-    plot_heatmap(aggregated_results, plots_path)
-    create_performance_plots(results, aggregated_results, plots_path)
-    create_pairplot(results, plots_path)
-
-    # Print analyses
-    # analyze_top_configurations(aggregated_results)
-    # statistical_analysis(aggregated_results)
+    plots_path = 'plots_and_tables\\knn_base'
+else:
+    csv_path = 'Hepatitis\\knn_base_results.csv'
+    plots_path = 'Hepatitis\\plots_and_tables\\knn_base'
 
 
-if __name__ == "__main__":
-    main()
+# Create plots folder
+create_plots_folder(plots_path)
+
+# Load and prepare data
+results, aggregated_results = load_and_prepare_data(csv_path)
+
+# Generate plots
+plot_k_vs_accuracy(aggregated_results, plots_path)
+plot_heatmap(aggregated_results, plots_path)
+create_performance_plots(results, aggregated_results, plots_path)
+create_pairplot(results, plots_path)
+
+print(f"Plots successfully saved in folder Hepatitis/plots_and_tables/knn_base\n")

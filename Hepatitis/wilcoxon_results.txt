@@ -1,8 +1,8 @@
 Wilcoxon Test Results to compare the best SVM algorithm and the best KNN algorithm for Hepatitis
 ===================
-Analysis performed on: 2024-11-02 17:33:42
-SVM data file: svm_hepatitis_results_best1.csv
-KNN data file: top_knn_results.csv
+Analysis performed on: 2024-11-03 13:46:28
+SVM data file: Hepatitis\svm_hepatitis_results_best1.csv
+KNN data file: Hepatitis\top_knn_results.csv
 
 
 
@@ -32,7 +32,7 @@ Statistical results for Time:
 ----------------------------------------
 
 Mean Time:
-SVM: 0.0008 +- 0.0006
+SVM: 0.0004 +- 0.0005
 KNN: 0.0041 +- 0.0029
 Skipping Wilcoxon test due to low Time variation.
 
