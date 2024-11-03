@@ -1,5 +1,11 @@
 \begin{thebibliography}{1}
 
+\bibitem{chang2006adaptive}
+Fu~Chang, Chin-Chin Lin, and Chi-Jen Lu.
+\newblock Adaptive prototype learning algorithms: Theoretical and experimental
+  studies.
+\newblock {\em Journal of Machine Learning Research}, 7:2125--2148, 2006.
+
 \bibitem{vazquez2005}
 Fernando Vázquez, Josep Sánchez, and Filiberto Pla.
 \newblock A stochastic approach to wilson's editing algorithm.

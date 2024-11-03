@@ -5,6 +5,7 @@ import random
 from collections import Counter
 
 from matplotlib import pyplot as plt
+from matplotlib.pyplot import colormaps
 from sklearn.neighbors import NearestNeighbors
 
 import pandas as pd
@@ -106,7 +107,7 @@ class ReductionKNN:
 
         return reduced_data
 
-    def generalized_condensed_nearest_neighbor(self, features: DataFrame, labels: DataFrame, rho=0.5):
+    def generalized_condensed_nearest_neighbor(self, features: DataFrame, labels: DataFrame, rho=0.5, saveAnimation=False):
         """
         The Generalized Condensed Nearest Neighbor (GCNN) algorithm reduces the dataset by absorbing samples
         based on a generalized absorption criterion. CNN is when rho=0
@@ -124,7 +125,7 @@ class ReductionKNN:
         Returns:
             list: Indices of the points in the reduced dataset.
         """
-        # Initialize prototypes for each class
+        # Initialize prototypes for each class using the voting mechanism
         prototypes = []
         prototype_labels = []
         prototype_indices = []
@@ -132,16 +133,26 @@ class ReductionKNN:
         unique_labels = labels.unique()
         for lbl in unique_labels:
             class_indices = labels[labels == lbl].index
-            rand_index = np.random.choice(class_indices)
-            prototypes.append(features.loc[rand_index])
+            class_features = features.loc[class_indices]
+
+            # Voting mechanism for selecting the initial prototype
+            votes = {idx: 0 for idx in class_indices}
+            for idx in class_indices:
+                distances = np.linalg.norm(class_features.values - features.loc[idx].values, axis=1)
+                nearest_idx = class_indices[np.argmin(distances[distances > 0])]  # Nearest neighbor excluding itself
+                votes[nearest_idx] += 1
+
+            # Find the sample with the most votes
+            initial_prototype_idx = max(votes, key=votes.get)
+            prototypes.append(features.loc[initial_prototype_idx].values)
             prototype_labels.append(lbl)
-            prototype_indices.append(rand_index)
+            prototype_indices.append(initial_prototype_idx)
 
-        prototypes = pd.DataFrame(prototypes)
+        prototypes = pd.DataFrame(prototypes, columns=features.columns)
         prototype_labels = pd.Series(prototype_labels)
-
         # Compute δn: minimum distance between points of different classes
-        # For smaller datasets
+
+        # For smaller datasets, not enough RAM memory for mushroom
         # dist_matrix = pd.DataFrame(np.linalg.norm(features.values[:, np.newaxis] - features.values, axis=2))
         # delta_n = dist_matrix[labels.values[:, np.newaxis] != labels.values].min().min()
 
@@ -167,21 +178,121 @@ class ReductionKNN:
         absorbed = pd.Series(False, index=features.index)
         absorbed[prototype_indices] = True
 
+        if saveAnimation:
+            # Setup for visualization
+            output_dir = "gcnn/animation"
+            os.makedirs(output_dir, exist_ok=True)
+            # Set up color mapping for each class
+            cmap = colormaps['prism']
+            color_dict = {cls: cmap(i / len(unique_labels)) for i, cls in enumerate(unique_labels)}
+            iteration = 0  # Iteration counter for saving plots
         while not absorbed.all():
             for i in features.index:
                 if not absorbed[i]:
-                    p_idx = (prototype_labels == labels[i]).idxmin()  # Get index of closest prototype in same class
-                    q_idx = (prototype_labels != labels[i]).idxmin()  # Get index of closest prototype in different class
+                    # Get nearest homogeneous and heterogeneous prototypes
+                    same_class_prototypes = prototypes[prototype_labels == labels[i]]
+                    diff_class_prototypes = prototypes[prototype_labels != labels[i]]
 
-                    p = prototypes.iloc[p_idx]
-                    q = prototypes.iloc[q_idx]
+                    if not same_class_prototypes.empty and not diff_class_prototypes.empty:
+                        p_idx = np.argmin(np.linalg.norm(same_class_prototypes.values - features.loc[i].values, axis=1))
+                        q_idx = np.argmin(np.linalg.norm(diff_class_prototypes.values - features.loc[i].values, axis=1))
 
-                    # Absorption criteria
-                    if np.linalg.norm(features.loc[i] - q) - np.linalg.norm(features.loc[i] - p) > rho * delta_n:
-                        prototypes = pd.concat([prototypes,features.loc[i]], ignore_index=True)
-                        prototype_labels = pd.concat([prototype_labels,pd.Series([labels[i]])], ignore_index=True)
-                        prototype_indices.append(i)
-                    absorbed[i] = True
+                        p = same_class_prototypes.iloc[p_idx]
+                        q = diff_class_prototypes.iloc[q_idx]
+
+                        # Absorption criterion
+                        if np.linalg.norm(features.loc[i] - q) - np.linalg.norm(features.loc[i] - p) > rho * delta_n:
+                            absorbed[i] = True
+
+
+                        if saveAnimation:
+                            # Visualization step
+                            plt.figure(figsize=(8, 8))
+                            for lbl in unique_labels:
+                                class_indices = features.index[labels == lbl]
+                                # Separate absorbed and unabsorbed indices for each class
+                                absorbed_class_indices = class_indices[absorbed[class_indices]]
+                                unabsorbed_class_indices = class_indices[~absorbed[class_indices]]
+                                # Plot absorbed points with size 20
+                                plt.scatter(
+                                    features.loc[absorbed_class_indices, "X"],
+                                    features.loc[absorbed_class_indices, "Y"],
+                                    color=color_dict[lbl], edgecolor='k', s=10, alpha=0.4,
+                                    label=f'Class {lbl} (Absorbed)' if len(absorbed_class_indices) > 0 else ""
+                                )
+
+                                # Plot unabsorbed points with size 50
+                                plt.scatter(
+                                    features.loc[unabsorbed_class_indices, "X"],
+                                    features.loc[unabsorbed_class_indices, "Y"],
+                                    color=color_dict[lbl], edgecolor='k', s=30, alpha=1.0,
+                                    label=f'Class {lbl} (Unabsorbed)' if len(unabsorbed_class_indices) > 0 else ""
+                                )
+                            # Plot prototypes and the current evaluated point
+                            plt.scatter(p["X"], p["Y"], s=100, color=color_dict[labels[p.name]], label="Prototype P",
+                                        edgecolor='black')
+                            plt.scatter(q["X"], q["Y"], s=100, color=color_dict[labels[q.name]], label="Prototype Q",
+                                        edgecolor='black')
+                            plt.scatter(features.loc[i, "X"], features.loc[i, "Y"], s=80, color='blue',
+                                        label="Evaluated Point", edgecolor='black')
+
+                            # Calculate the radius of the circle
+                            radius = np.linalg.norm(features.loc[i] - p) + rho * delta_n
+
+                            # Create and add a dashed-line circle
+                            circle = plt.Circle(
+                                (features.loc[i, "X"], features.loc[i, "Y"]),  # Center of the circle
+                                radius,  # Radius of the circle
+                                color='blue',  # Color of the circle
+                                fill=False,  # Make the circle unfilled
+                                linestyle='--',  # Dashed line style
+                                label='GCNN'
+                            )
+                            plt.gca().add_patch(circle)
+                            radius -= rho * delta_n
+                            # Create and add a dashed-line circle
+                            circle = plt.Circle(
+                                (features.loc[i, "X"], features.loc[i, "Y"]),  # Center of the circle
+                                radius,  # Radius of the circle
+                                color='black',  # Color of the circle
+                                fill=False,  # Make the circle unfilled
+                                linestyle='--',  # Dashed line style
+                                label='CNN'
+                            )
+                            plt.gca().add_patch(circle)
+
+                            # Save plot for animation
+                            plt.title(f'Iteration {iteration}')
+                            plt.xlabel('Feature 1')
+                            plt.ylabel('Feature 2')
+                            plt.legend()
+                            #plt.show()
+                            plt.savefig(os.path.join(output_dir, f'rho_{rho}_iteration_{iteration}.png'))
+                            plt.close()
+                            iteration += 1
+
+            # G3: Prototype Augmentation - Voting mechanism for selecting new prototypes
+            for lbl in unique_labels:
+                unabsorbed_class_indices = features.index[(labels == lbl) & (~absorbed)]
+                if not unabsorbed_class_indices.empty:
+                    if len(unabsorbed_class_indices) > 1:
+                        class_features = features.loc[unabsorbed_class_indices]
+
+                        # Voting mechanism to select a new prototype among unabsorbed samples
+                        votes = {idx: 0 for idx in unabsorbed_class_indices}
+                        for idx in unabsorbed_class_indices:
+                            distances = np.linalg.norm(class_features.values - features.loc[idx].values, axis=1)
+                            nearest_idx = unabsorbed_class_indices[np.argmin(distances[distances > 0])]
+                            votes[nearest_idx] += 1
+
+                        # Find the sample with the most votes to be the next prototype
+                        new_prototype_idx = max(votes, key=votes.get)
+                    else:
+                        new_prototype_idx = unabsorbed_class_indices[0]
+                    prototypes = pd.concat([prototypes, features.loc[[new_prototype_idx]]], ignore_index=True)
+                    prototype_labels = pd.concat([prototype_labels, pd.Series([lbl])], ignore_index=True)
+                    prototype_indices.append(new_prototype_idx)
+                    absorbed[new_prototype_idx] = True
 
         return prototype_indices
 
